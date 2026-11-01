@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>かんたん家計簿</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="家計簿">
+<meta name="theme-color" content="#ff8a5b">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
   :root {
@@ -360,6 +367,32 @@
   .file-btn.import { background: #eaf3ff; border-color: #cfe4ff; }
   .file-btn.danger { background: #fff0f0; border-color: #ffd6d6; color: var(--danger); }
 
+  .sync-notice {
+    font-size: 12px;
+    color: var(--sub);
+    background: #fff8f0;
+    border: 1px solid #ffe3c6;
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    margin-bottom: var(--space);
+  }
+  .list-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .list-top-row #lastSyncLabel { font-size: 12px; color: var(--sub); }
+  .list-top-row #syncRefreshBtn {
+    flex: 0 0 auto;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    border: 2px solid #eee;
+    background: #fafafa;
+    font-size: 13px;
+    cursor: pointer;
+  }
   .sync-btn-row { display: flex; gap: 8px; margin-bottom: 12px; }
   .sync-btn-row .file-btn { flex: 1; margin-bottom: 0; }
   #syncStatus {
@@ -436,6 +469,7 @@
     <!-- 入力画面 -->
     <section class="screen active" id="screen-input">
       <div class="card">
+        <div id="syncNotice" class="sync-notice" style="display:none;">ショートカット連携が未設定です（設定画面で連携URLを入力）</div>
         <div class="field-row two-col">
           <div class="field-col">
             <label class="field-label" for="date">日付</label>
@@ -479,6 +513,10 @@
         </div>
         <div id="monthTotal">¥0</div>
         <div class="total-sub">今月の合計支出</div>
+        <div class="list-top-row">
+          <span id="lastSyncLabel"></span>
+          <button id="syncRefreshBtn" type="button">更新</button>
+        </div>
         <div class="btn-group" id="listViewToggle">
           <div class="choice-btn selected" data-view="raw">明細</div>
           <div class="choice-btn" data-view="monthly">月別</div>
@@ -523,6 +561,7 @@
     <section class="screen" id="screen-settings">
       <div class="card">
         <div class="section-title">スプレッドシート連携</div>
+        <div id="syncNoticeSettings" class="sync-notice" style="display:none;">ショートカット連携が未設定です（設定画面で連携URLを入力）</div>
         <label class="field-label" for="syncUrl">連携URL</label>
         <input type="text" id="syncUrl" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" autocapitalize="off" spellcheck="false">
         <label class="field-label" for="syncToken">合言葉</label>
@@ -591,7 +630,10 @@
   var PAY_METHODS = [
     { id: "card", label: "カード", csvLabel: "カード" },
     { id: "cash", label: "現金", csvLabel: "現金" },
-    { id: "paypay", label: "PayPay", csvLabel: "PayPay" }
+    { id: "paypay", label: "PayPay", csvLabel: "PayPay" },
+    { id: "aeon", label: "カード（イオン）", csvLabel: "カード（イオン）" },
+    { id: "rakuten", label: "カード（楽天）", csvLabel: "カード（楽天）" },
+    { id: "jcb", label: "カード（JCB）", csvLabel: "カード（JCB）" }
   ];
   var DEFAULT_CATEGORIES = ["食費", "日用品", "交通", "娯楽", "サブスク", "その他"];
   var CHART_COLORS = ["#ff8a5b", "#4ecdc4", "#ffd166", "#6a89cc", "#c56cf0", "#78e08f", "#f8a5c2", "#596275"];
@@ -682,8 +724,8 @@
     return state.sync.url.replace(/\/+$/, "");
   }
   function gasFetchList() {
-    var url = gasBaseUrl() + "?" + buildQuery({ action: "list", token: state.sync.token });
-    return fetch(url, { method: "GET", redirect: "follow" })
+    var url = gasBaseUrl() + "?" + buildQuery({ action: "list", token: state.sync.token, _ts: Date.now() });
+    return fetch(url, { method: "GET", redirect: "follow", cache: "no-store" })
       .then(function (res) { return res.text(); })
       .then(function (text) {
         var json;
@@ -702,10 +744,11 @@
       pay: rec.payMethod,
       item: rec.item || "",
       date: rec.date,
-      time: timeOf(rec) || ""
+      time: timeOf(rec) || "",
+      _ts: Date.now()
     };
     var url = gasBaseUrl() + "?" + buildQuery(params);
-    return fetch(url, { method: "GET", redirect: "follow" })
+    return fetch(url, { method: "GET", redirect: "follow", cache: "no-store" })
       .then(function (res) { return res.text(); })
       .then(function (text) {
         if (/^エラー/.test(text)) throw new Error(text);
@@ -713,8 +756,8 @@
       });
   }
   function gasDelete(id) {
-    var url = gasBaseUrl() + "?" + buildQuery({ action: "delete", token: state.sync.token, id: id });
-    return fetch(url, { method: "GET", redirect: "follow" })
+    var url = gasBaseUrl() + "?" + buildQuery({ action: "delete", token: state.sync.token, id: id, _ts: Date.now() });
+    return fetch(url, { method: "GET", redirect: "follow", cache: "no-store" })
       .then(function (res) { return res.text(); })
       .then(function (text) {
         var json;
@@ -729,7 +772,8 @@
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(body),
-      redirect: "follow"
+      redirect: "follow",
+      cache: "no-store"
     })
       .then(function (res) { return res.text(); })
       .then(function (text) {
@@ -759,9 +803,23 @@
     refreshListScreen();
     if (document.getElementById("screen-stats").classList.contains("active")) renderStats();
   }
+  function updateSyncNotice() {
+    var show = !isSyncConfigured();
+    var el1 = document.getElementById("syncNotice");
+    if (el1) el1.style.display = show ? "" : "none";
+    var el2 = document.getElementById("syncNoticeSettings");
+    if (el2) el2.style.display = show ? "" : "none";
+  }
+  function updateLastSyncLabel() {
+    var el = document.getElementById("lastSyncLabel");
+    if (!el) return;
+    if (!isSyncConfigured()) { el.textContent = ""; return; }
+    el.textContent = lastSyncResult ? "最終同期 " + lastSyncResult.time : "最終同期 ー";
+  }
   var lastSyncResult = null; // { ok: bool, time: "HH:MM", message?: string, count?: number }
   function renderSyncStatus(message, kind) {
     var el = document.getElementById("syncStatus");
+    updateLastSyncLabel();
     if (!el) return;
     if (message) {
       el.textContent = message;
@@ -786,9 +844,11 @@
     el.textContent = "設定済み：" + state.sync.url;
     el.className = "ok";
   }
+  var syncInFlightPromise = null;
   function syncRefresh() {
     if (!isSyncConfigured()) return Promise.resolve();
-    return gasFetchList().then(function (records) {
+    if (syncInFlightPromise) return syncInFlightPromise; // 多重実行の抑止
+    syncInFlightPromise = gasFetchList().then(function (records) {
       state.records = normalizeServerRecords(records);
       saveSyncCache(state.records);
       lastSyncResult = { ok: true, time: currentTimeStr(), count: state.records.length };
@@ -799,7 +859,20 @@
       var msg = "シートに接続できませんでした。前回保存した記録を表示しています\n（原因：" + err.message + "）";
       renderSyncStatus(msg, "error");
       showToast("シートに接続できませんでした。前回保存した記録を表示しています（原因：" + err.message + "）");
+    }).then(function () {
+      syncInFlightPromise = null;
     });
+    return syncInFlightPromise;
+  }
+  // 起動時・visibilitychange・pageshow・タブ切替など「自動」トリガー用。数秒以内の連続呼び出しは1回に束ねる
+  var AUTO_SYNC_MIN_INTERVAL_MS = 4000;
+  var lastAutoSyncAt = 0;
+  function autoSyncRefresh() {
+    if (!isSyncConfigured()) return Promise.resolve();
+    var now = Date.now();
+    if (now - lastAutoSyncAt < AUTO_SYNC_MIN_INTERVAL_MS) return Promise.resolve();
+    lastAutoSyncAt = now;
+    return syncRefresh();
   }
 
   var state = {
@@ -876,9 +949,10 @@
       screens.forEach(function (s) {
         s.classList.toggle("active", s.id === "screen-" + target);
       });
-      if (target === "list") refreshListScreen();
-      if (target === "stats") renderStats();
+      if (target === "list") { refreshListScreen(); autoSyncRefresh(); }
+      if (target === "stats") { renderStats(); autoSyncRefresh(); }
       if (target === "settings") { renderCategoryEditList(); renderSyncSettingsForm(); }
+      if (target === "input" || target === "settings") updateSyncNotice();
     });
   });
 
@@ -1026,6 +1100,13 @@
   document.getElementById("listNextMonth").addEventListener("click", function () {
     state.listMonth = shiftMonth(state.listMonth, 1);
     refreshListScreen();
+  });
+
+  document.getElementById("syncRefreshBtn").addEventListener("click", function () {
+    if (!isSyncConfigured()) { showToast("連携設定が未設定です"); return; }
+    var btn = this;
+    btn.disabled = true;
+    syncRefresh().then(function () { btn.disabled = false; });
   });
 
   document.getElementById("listViewToggle").querySelectorAll(".choice-btn").forEach(function (btn) {
@@ -1422,6 +1503,7 @@
     }
     state.sync = { url: url, token: token };
     saveSyncConfig(state.sync);
+    updateSyncNotice();
     if (!url || !token) {
       renderSyncStatus("未設定（端末内のみに保存されます）", null);
       showToast("連携設定を解除しました");
@@ -1439,8 +1521,8 @@
     if (!url || !token) { renderSyncStatus("連携URLと合言葉を入力してください", "error"); return; }
     if (!/^https?:\/\//.test(url)) { renderSyncStatus("連携URLはhttp(s)://から始めてください", "error"); return; }
     renderSyncStatus("接続テスト中…", null);
-    var testUrl = url.replace(/\/+$/, "") + "?" + buildQuery({ action: "list", token: token });
-    fetch(testUrl, { method: "GET", redirect: "follow" })
+    var testUrl = url.replace(/\/+$/, "") + "?" + buildQuery({ action: "list", token: token, _ts: Date.now() });
+    fetch(testUrl, { method: "GET", redirect: "follow", cache: "no-store" })
       .then(function (res) { return res.text(); })
       .then(function (text) {
         var json;
@@ -1583,10 +1665,15 @@
     var clean = stripEmoji(label);
     var found = PAY_METHODS.find(function (p) { return p.label === clean || p.csvLabel === clean || p.id === clean; });
     if (found) return found.id;
-    var l = clean.toLowerCase();
-    if (l.indexOf("カード") !== -1 || l.indexOf("card") !== -1) return "card";
-    if (l.indexOf("現金") !== -1 || l.indexOf("cash") !== -1) return "cash";
-    if (l.indexOf("paypay") !== -1) return "paypay";
+    // 全角半角の括弧・空白を除いた表記揺れ吸収用の正規化文字列
+    var norm = clean.replace(/[\s()（）]/g, "").toLowerCase();
+    if (!norm) return null;
+    if (norm.indexOf("イオン") !== -1 || norm.indexOf("aeon") !== -1) return "aeon";
+    if (norm.indexOf("楽天") !== -1 || norm.indexOf("rakuten") !== -1) return "rakuten";
+    if (norm.indexOf("jcb") !== -1) return "jcb";
+    if (norm.indexOf("カード") !== -1 || norm.indexOf("card") !== -1) return "card";
+    if (norm.indexOf("現金") !== -1 || norm.indexOf("cash") !== -1) return "cash";
+    if (norm.indexOf("paypay") !== -1 || norm.indexOf("ペイペイ") !== -1) return "paypay";
     return null;
   }
 
@@ -1752,42 +1839,54 @@
 
   function handleUrlAutoAdd() {
     var params = new URLSearchParams(window.location.search);
-    if (params.get("add") === "1") {
-      var amount = parseFloat(params.get("amount"));
-      if (amount && amount > 0 && !isNaN(amount)) {
-        var category = resolveCategoryParam(params.get("category"));
-        var place = (params.get("place") || "").trim();
-        var payMethod = payIdFromLabel((params.get("pay") || "").trim()) || "cash";
-        var date = (params.get("date") || "").trim() || todayStr();
-        var item = (params.get("item") || "").trim() || place || category;
-        var now = new Date();
-        var time = date + " " + pad2(now.getHours()) + ":" + pad2(now.getMinutes());
-
-        if (isSyncConfigured()) {
-          gasAdd({ date: date, time: time, item: item, place: place, amount: amount, payMethod: payMethod, category: category })
-            .then(function () {
-              showToast("記録しました");
-              return syncRefresh();
-            })
-            .catch(function (err) { showToast("通信エラー：" + err.message); });
-        } else {
-          state.records.push({
-            id: uid(),
-            date: date,
-            time: time,
-            item: item,
-            place: place,
-            amount: amount,
-            payMethod: payMethod,
-            category: category
-          });
-          saveRecords(state.records);
-          showToast("記録しました");
-        }
-      }
-      var cleanUrl = window.location.pathname + window.location.hash;
+    if (params.get("add") !== "1") return;
+    var cleanUrl = window.location.pathname + window.location.hash;
+    var amount = parseFloat(params.get("amount"));
+    if (!(amount && amount > 0 && !isNaN(amount))) {
       window.history.replaceState({}, document.title, cleanUrl);
+      return;
     }
+
+    var category = resolveCategoryParam(params.get("category"));
+    var place = (params.get("place") || "").trim();
+    var payMethod = payIdFromLabel((params.get("pay") || "").trim()) || "cash";
+    var date = (params.get("date") || "").trim() || todayStr();
+    var item = (params.get("item") || "").trim() || place || category;
+    var now = new Date();
+    var time = date + " " + pad2(now.getHours()) + ":" + pad2(now.getMinutes());
+
+    if (isSyncConfigured()) {
+      gasAdd({ date: date, time: time, item: item, place: place, amount: amount, payMethod: payMethod, category: category })
+        .then(function () {
+          showToast("記録しました");
+          return syncRefresh();
+        })
+        .catch(function (err) { showToast("通信エラー：" + err.message); });
+      // サーバー連携時は従来通り送信と並行してクエリを消す
+      window.history.replaceState({}, document.title, cleanUrl);
+      return;
+    }
+
+    // 未設定時：保存 → トースト → replaceState の順を必ず守る。保存に失敗したらクエリは消さずエラー表示のみ行う
+    var nextRecords = state.records.concat([{
+      id: uid(),
+      date: date,
+      time: time,
+      item: item,
+      place: place,
+      amount: amount,
+      payMethod: payMethod,
+      category: category
+    }]);
+    try {
+      saveRecords(nextRecords);
+    } catch (e) {
+      showToast("端末への保存に失敗しました。もう一度お試しください");
+      return;
+    }
+    state.records = nextRecords;
+    showToast("記録しました");
+    window.history.replaceState({}, document.title, cleanUrl);
   }
 
   // ---------- 初期描画 ----------
@@ -1797,10 +1896,17 @@
   refreshListScreen();
   renderCategoryEditList();
   renderSyncSettingsForm();
+  updateSyncNotice();
   if (isSyncConfigured()) {
     renderSyncStatus("読み込み中…", null);
     syncRefresh();
   }
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") autoSyncRefresh();
+  });
+  window.addEventListener("pageshow", function () {
+    autoSyncRefresh();
+  });
 })();
 </script>
 </body>

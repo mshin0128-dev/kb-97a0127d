@@ -1,0 +1,16 @@
+{
+  "name": "かんたん家計簿",
+  "short_name": "家計簿",
+  "start_url": "./%E3%80%90%E5%AE%B6%E8%A8%88%E7%B0%BF%E3%80%91kakeibo.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#ff8a5b",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
