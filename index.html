@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>📒 かんたん家計簿</title>
+<title>かんたん家計簿</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
   :root {
@@ -203,8 +203,19 @@
     background: none;
     cursor: pointer;
   }
-  .tab-btn .icon { display: block; font-size: 20px; margin-bottom: 2px; }
+  .tab-btn .icon { display: flex; align-items: center; justify-content: center; margin-bottom: 2px; }
+  .tab-btn .icon svg { width: 20px; height: 20px; display: block; }
   .tab-btn.active { color: var(--accent); font-weight: bold; }
+
+  .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    min-width: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
 
   .month-switch {
     display: flex;
@@ -407,7 +418,7 @@
 </head>
 <body>
 <div id="app">
-  <header class="topbar">📒 かんたん家計簿</header>
+  <header class="topbar">かんたん家計簿</header>
 
   <main>
     <!-- 入力画面 -->
@@ -415,34 +426,34 @@
       <div class="card">
         <div class="field-row two-col">
           <div class="field-col">
-            <label class="field-label" for="date">📅 日付</label>
+            <label class="field-label" for="date">日付</label>
             <input type="date" id="date">
           </div>
           <div class="field-col">
-            <label class="field-label" for="time">🕐 時刻</label>
+            <label class="field-label" for="time">時刻</label>
             <input type="time" id="time">
           </div>
         </div>
 
-        <label class="field-label" for="item">✏️ 品目</label>
+        <label class="field-label" for="item">品目</label>
         <input type="text" id="item" placeholder="例：スーパーで買い物">
 
-        <label class="field-label" for="place">📍 購入場所</label>
+        <label class="field-label" for="place">購入場所</label>
         <input type="text" id="place" placeholder="例：コンビニ">
 
-        <label class="field-label" for="amount">💰 金額（円）</label>
+        <label class="field-label" for="amount">金額（円）</label>
         <div class="amount-field">
           <span class="yen-sign">¥</span>
           <input type="number" id="amount" inputmode="numeric" placeholder="0">
         </div>
 
-        <label class="field-label">💳 支払い方法</label>
+        <label class="field-label">支払い方法</label>
         <div class="btn-group" id="payMethodGroup"></div>
 
-        <label class="field-label">🏷️ カテゴリ</label>
+        <label class="field-label">カテゴリ</label>
         <div class="btn-group" id="categoryGroup"></div>
 
-        <button id="addBtn">➕ 記録する</button>
+        <button id="addBtn">記録する</button>
       </div>
     </section>
 
@@ -450,27 +461,27 @@
     <section class="screen" id="screen-list">
       <div class="card">
         <div class="month-switch">
-          <button id="listPrevMonth">◀</button>
+          <button id="listPrevMonth" aria-label="前の月"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
           <span class="month-label" id="listMonthLabel"></span>
-          <button id="listNextMonth">▶</button>
+          <button id="listNextMonth" aria-label="次の月"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
         </div>
         <div id="monthTotal">¥0</div>
         <div class="total-sub">今月の合計支出</div>
         <div class="btn-group" id="listViewToggle">
-          <div class="choice-btn selected" data-view="raw">📋 明細</div>
-          <div class="choice-btn" data-view="monthly">🏷️ 月別</div>
-          <div class="choice-btn" data-view="daily">🗓️ 日別</div>
+          <div class="choice-btn selected" data-view="raw">明細</div>
+          <div class="choice-btn" data-view="monthly">月別</div>
+          <div class="choice-btn" data-view="daily">日別</div>
         </div>
       </div>
       <div class="card" id="listCard">
         <div id="listContainer"></div>
       </div>
       <div class="card" id="monthlyView">
-        <div class="section-title">🏷️ カテゴリ内訳</div>
+        <div class="section-title">カテゴリ内訳</div>
         <table class="summary-table" id="monthlyCategoryTable"></table>
       </div>
       <div class="card" id="dailyView">
-        <div class="section-title">🗓️ 日別の支出</div>
+        <div class="section-title">日別の支出</div>
         <div id="dailyContainer"></div>
       </div>
     </section>
@@ -479,18 +490,18 @@
     <section class="screen" id="screen-stats">
       <div class="card">
         <div class="month-switch">
-          <button id="statsPrevMonth">◀</button>
+          <button id="statsPrevMonth" aria-label="前の月"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
           <span class="month-label" id="statsMonthLabel"></span>
-          <button id="statsNextMonth">▶</button>
+          <button id="statsNextMonth" aria-label="次の月"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
         </div>
       </div>
       <div class="card">
-        <div class="section-title">🏷️ カテゴリ別集計</div>
+        <div class="section-title">カテゴリ別集計</div>
         <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
         <table class="summary-table" id="categoryTable"></table>
       </div>
       <div class="card">
-        <div class="section-title">💳 支払い方法別集計</div>
+        <div class="section-title">支払い方法別集計</div>
         <div class="chart-wrap"><canvas id="paymentChart"></canvas></div>
         <table class="summary-table" id="paymentTable"></table>
       </div>
@@ -499,7 +510,7 @@
     <!-- 設定画面 -->
     <section class="screen" id="screen-settings">
       <div class="card">
-        <div class="section-title">🏷️ カテゴリ編集</div>
+        <div class="section-title">カテゴリ編集</div>
         <div id="categoryEditList"></div>
         <div class="add-cat-row">
           <input type="text" id="newCategoryInput" placeholder="新しいカテゴリ名">
@@ -507,20 +518,20 @@
         </div>
       </div>
       <div class="card">
-        <div class="section-title">📤 データ出力・入力</div>
-        <button class="file-btn export" id="exportBtn">📤 CSVを書き出す</button>
-        <button class="file-btn import" id="importBtn">📥 CSVを読み込む</button>
+        <div class="section-title">データ出力・入力</div>
+        <button class="file-btn export" id="exportBtn">CSVを書き出す</button>
+        <button class="file-btn import" id="importBtn">CSVを読み込む</button>
         <input type="file" id="importFile" accept=".csv" style="display:none;">
-        <button class="file-btn danger" id="clearAllBtn">🗑️ 全データを削除</button>
+        <button class="file-btn danger" id="clearAllBtn">全データを削除</button>
       </div>
     </section>
   </main>
 
   <nav class="tabbar">
-    <button class="tab-btn active" data-screen="input"><span class="icon">✏️</span>入力</button>
-    <button class="tab-btn" data-screen="list"><span class="icon">📋</span>一覧</button>
-    <button class="tab-btn" data-screen="stats"><span class="icon">📊</span>集計</button>
-    <button class="tab-btn" data-screen="settings"><span class="icon">⚙️</span>設定</button>
+    <button class="tab-btn active" data-screen="input"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>入力</button>
+    <button class="tab-btn" data-screen="list"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>一覧</button>
+    <button class="tab-btn" data-screen="stats"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>集計</button>
+    <button class="tab-btn" data-screen="settings"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>設定</button>
   </nav>
 </div>
 
@@ -553,14 +564,32 @@
   var STORAGE_KEY = "kakeibo_records_v1";
   var CATEGORY_KEY = "kakeibo_categories_v1";
   var PAY_METHODS = [
-    { id: "card", label: "💳 カード", csvLabel: "カード" },
-    { id: "cash", label: "💴 現金", csvLabel: "現金" },
-    { id: "paypay", label: "📱 PayPay", csvLabel: "PayPay" }
+    { id: "card", label: "カード", csvLabel: "カード" },
+    { id: "cash", label: "現金", csvLabel: "現金" },
+    { id: "paypay", label: "PayPay", csvLabel: "PayPay" }
   ];
   var DEFAULT_CATEGORIES = ["食費", "日用品", "交通", "娯楽", "サブスク", "その他"];
-  var CATEGORY_ICONS = {
-    "食費": "🍚", "日用品": "🧻", "交通": "🚃", "娯楽": "🎮", "サブスク": "📺", "その他": "📦"
-  };
+  var CHART_COLORS = ["#ff8a5b", "#4ecdc4", "#ffd166", "#6a89cc", "#c56cf0", "#78e08f", "#f8a5c2", "#596275"];
+
+  function stripEmoji(s) {
+    return String(s == null ? "" : s).replace(/[\p{Extended_Pictographic}️‍]/gu, "").trim();
+  }
+  function hashIndex(s) {
+    var str = String(s || "");
+    var h = 0;
+    for (var i = 0; i < str.length; i++) { h = (h * 31 + str.charCodeAt(i)) | 0; }
+    return Math.abs(h);
+  }
+  function colorForCategory(cat) {
+    var idx = state.categories.indexOf(cat);
+    if (idx === -1) idx = hashIndex(cat);
+    return CHART_COLORS[idx % CHART_COLORS.length];
+  }
+  function colorForPay(id) {
+    var idx = PAY_METHODS.findIndex(function (p) { return p.id === id; });
+    if (idx === -1) idx = hashIndex(id);
+    return CHART_COLORS[idx % CHART_COLORS.length];
+  }
 
   function loadRecords() {
     try {
@@ -682,7 +711,11 @@
     PAY_METHODS.forEach(function (pm) {
       var b = document.createElement("div");
       b.className = "choice-btn" + (state.selectedPay === pm.id ? " selected" : "");
-      b.textContent = pm.label;
+      var dot = document.createElement("span");
+      dot.className = "dot";
+      dot.style.background = colorForPay(pm.id);
+      b.appendChild(dot);
+      b.appendChild(document.createTextNode(stripEmoji(pm.label)));
       b.addEventListener("click", function () {
         state.selectedPay = pm.id;
         renderPayGroup();
@@ -699,7 +732,11 @@
     state.categories.forEach(function (cat) {
       var b = document.createElement("div");
       b.className = "choice-btn" + (state.selectedCategory === cat ? " selected" : "");
-      b.textContent = (CATEGORY_ICONS[cat] || "🏷️") + " " + cat;
+      var dot = document.createElement("span");
+      dot.className = "dot";
+      dot.style.background = colorForCategory(cat);
+      b.appendChild(dot);
+      b.appendChild(document.createTextNode(stripEmoji(cat)));
       b.addEventListener("click", function () {
         state.selectedCategory = cat;
         renderCategoryGroup();
@@ -717,7 +754,7 @@
     state.selectedPay = PAY_METHODS[0].id;
     state.selectedCategory = state.categories[0] || "";
     state.editingId = null;
-    addBtn.textContent = "➕ 記録する";
+    addBtn.textContent = "記録する";
     renderPayGroup();
     renderCategoryGroup();
   }
@@ -729,9 +766,9 @@
     var place = placeInput.value.trim();
     var amount = parseFloat(amountInput.value);
 
-    if (!date) { showToast("⚠️ 日付を入力してください"); return; }
-    if (!item) { showToast("⚠️ 品目を入力してください"); return; }
-    if (!amount || amount <= 0) { showToast("⚠️ 金額を入力してください"); return; }
+    if (!date) { showToast("日付を入力してください"); return; }
+    if (!item) { showToast("品目を入力してください"); return; }
+    if (!amount || amount <= 0) { showToast("金額を入力してください"); return; }
 
     var recordTime = date + " " + time;
 
@@ -746,7 +783,7 @@
         rec.payMethod = state.selectedPay;
         rec.category = state.selectedCategory;
       }
-      showToast("✅ 更新しました");
+      showToast("更新しました");
     } else {
       state.records.push({
         id: uid(),
@@ -758,7 +795,7 @@
         payMethod: state.selectedPay,
         category: state.selectedCategory
       });
-      showToast("✅ 記録しました！");
+      showToast("記録しました！");
     }
     saveRecords(state.records);
     resetInputForm();
@@ -816,8 +853,9 @@
     var catValues = catLabels.map(function (k) { return byCategory[k]; });
     renderSummaryTable(
       document.getElementById("monthlyCategoryTable"),
-      catLabels.map(function (l) { return (CATEGORY_ICONS[l] || "🏷️") + " " + l; }),
-      catValues
+      catLabels.map(stripEmoji),
+      catValues,
+      catLabels.map(colorForCategory)
     );
   }
 
@@ -832,7 +870,7 @@
     if (!days.length) {
       var empty = document.createElement("div");
       empty.className = "empty-msg";
-      empty.textContent = "📭 この月の記録はまだありません";
+      empty.textContent = "この月の記録はまだありません";
       dailyContainer.appendChild(empty);
       return;
     }
@@ -876,7 +914,11 @@
       left.className = "li-left";
       var itemEl = document.createElement("div");
       itemEl.className = "li-item";
-      itemEl.textContent = (CATEGORY_ICONS[r.category] || "🏷️") + " " + r.item;
+      var itemDot = document.createElement("span");
+      itemDot.className = "dot";
+      itemDot.style.background = colorForCategory(r.category);
+      itemEl.appendChild(itemDot);
+      itemEl.appendChild(document.createTextNode(stripEmoji(r.item)));
       var metaEl = document.createElement("div");
       metaEl.className = "li-meta";
       metaEl.textContent = shortMetaText(r);
@@ -898,26 +940,28 @@
   });
 
   function payLabel(id) {
-    var pm = PAY_METHODS.find(function (p) { return p.id === id; });
-    return pm ? pm.label : id;
+    var resolvedId = payIdFromLabel(id);
+    var pm = resolvedId && PAY_METHODS.find(function (p) { return p.id === resolvedId; });
+    return pm ? pm.label : stripEmoji(id);
   }
 
   function payCsvLabel(id) {
-    var pm = PAY_METHODS.find(function (p) { return p.id === id; });
-    return pm ? pm.csvLabel : id;
+    var resolvedId = payIdFromLabel(id);
+    var pm = resolvedId && PAY_METHODS.find(function (p) { return p.id === resolvedId; });
+    return pm ? pm.csvLabel : stripEmoji(id);
   }
 
   function timeOf(r) {
     return ((r.time || "").split(" ")[1]) || "";
   }
   function fullMetaText(r) {
-    var parts = [r.date + " " + timeOf(r), r.category, payLabel(r.payMethod)];
-    if (r.place) parts.push(r.place);
+    var parts = [r.date + " " + timeOf(r), stripEmoji(r.category), payLabel(r.payMethod)];
+    if (r.place) parts.push(stripEmoji(r.place));
     return parts.join(" ・ ");
   }
   function shortMetaText(r) {
-    var parts = [timeOf(r), r.category, payLabel(r.payMethod)];
-    if (r.place) parts.push(r.place);
+    var parts = [timeOf(r), stripEmoji(r.category), payLabel(r.payMethod)];
+    if (r.place) parts.push(stripEmoji(r.place));
     return parts.join(" ・ ");
   }
 
@@ -934,7 +978,7 @@
     if (!monthRecords.length) {
       var empty = document.createElement("div");
       empty.className = "empty-msg";
-      empty.textContent = "📭 この月の記録はまだありません";
+      empty.textContent = "この月の記録はまだありません";
       listContainer.appendChild(empty);
       return;
     }
@@ -947,7 +991,11 @@
       left.className = "li-left";
       var itemEl = document.createElement("div");
       itemEl.className = "li-item";
-      itemEl.textContent = (CATEGORY_ICONS[r.category] || "🏷️") + " " + r.item;
+      var itemDot = document.createElement("span");
+      itemDot.className = "dot";
+      itemDot.style.background = colorForCategory(r.category);
+      itemEl.appendChild(itemDot);
+      itemEl.appendChild(document.createTextNode(stripEmoji(r.item)));
       var metaEl = document.createElement("div");
       metaEl.className = "li-meta";
       metaEl.textContent = fullMetaText(r);
@@ -963,11 +1011,11 @@
       var actions = document.createElement("div");
       actions.className = "li-actions";
       var editBtn = document.createElement("button");
-      editBtn.textContent = "✏️";
+      editBtn.textContent = "編集";
       editBtn.addEventListener("click", function () { startEdit(r.id); });
       var delBtn = document.createElement("button");
       delBtn.className = "del-btn";
-      delBtn.textContent = "🗑️";
+      delBtn.textContent = "削除";
       delBtn.addEventListener("click", function () { requestDelete(r.id); });
       actions.appendChild(editBtn);
       actions.appendChild(delBtn);
@@ -992,7 +1040,7 @@
     amountInput.value = rec.amount;
     state.selectedPay = rec.payMethod;
     state.selectedCategory = rec.category;
-    addBtn.textContent = "💾 更新する";
+    addBtn.textContent = "更新する";
     renderPayGroup();
     renderCategoryGroup();
     tabButtons.forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-screen") === "input"); });
@@ -1009,14 +1057,14 @@
       state.records = state.records.filter(function (r) { return r.id !== state.pendingDeleteId; });
       saveRecords(state.records);
       refreshListScreen();
-      showToast("🗑️ 削除しました");
+      showToast("削除しました");
     } else if (state.pendingDeleteScreen === "category" && state.pendingDeleteId) {
       var cat = state.pendingDeleteId;
       state.categories = state.categories.filter(function (c) { return c !== cat; });
       saveCategories(state.categories);
       renderCategoryEditList();
       renderCategoryGroup();
-      showToast("🗑️ カテゴリを削除しました");
+      showToast("カテゴリを削除しました");
     } else if (state.pendingDeleteScreen === "all") {
       state.records = [];
       state.categories = DEFAULT_CATEGORIES.slice();
@@ -1025,7 +1073,7 @@
       refreshListScreen();
       renderCategoryGroup();
       renderCategoryEditList();
-      showToast("🗑️ すべて削除しました");
+      showToast("すべて削除しました");
     }
     closeConfirm();
   });
@@ -1057,8 +1105,6 @@
     renderStats();
   });
 
-  var CHART_COLORS = ["#ff8a5b", "#4ecdc4", "#ffd166", "#6a89cc", "#c56cf0", "#78e08f", "#f8a5c2", "#596275"];
-
   function renderStats() {
     statsMonthLabel.textContent = monthLabel(state.statsMonth);
     var monthRecords = state.records.filter(function (r) { return monthKeyOf(r.date) === state.statsMonth; });
@@ -1068,29 +1114,32 @@
     monthRecords.forEach(function (r) {
       byCategory[r.category] = (byCategory[r.category] || 0) + r.amount;
     });
-    var catLabels = Object.keys(byCategory).filter(function (k) { return byCategory[k] > 0; });
-    var catValues = catLabels.map(function (k) { return byCategory[k]; });
+    var catKeys = Object.keys(byCategory).filter(function (k) { return byCategory[k] > 0; });
+    var catValues = catKeys.map(function (k) { return byCategory[k]; });
+    var catColors = catKeys.map(colorForCategory);
 
     var byPay = {};
     PAY_METHODS.forEach(function (p) { byPay[p.id] = 0; });
     monthRecords.forEach(function (r) {
-      byPay[r.payMethod] = (byPay[r.payMethod] || 0) + r.amount;
+      var payKey = payIdFromLabel(r.payMethod) || r.payMethod;
+      byPay[payKey] = (byPay[payKey] || 0) + r.amount;
     });
-    var payLabels = Object.keys(byPay).filter(function (k) { return byPay[k] > 0; });
-    var payValues = payLabels.map(function (k) { return byPay[k]; });
+    var payKeys = Object.keys(byPay).filter(function (k) { return byPay[k] > 0; });
+    var payValues = payKeys.map(function (k) { return byPay[k]; });
+    var payColors = payKeys.map(colorForPay);
 
-    renderSummaryTable(categoryTable, catLabels.map(function (l) { return (CATEGORY_ICONS[l] || "🏷️") + " " + l; }), catValues);
-    renderSummaryTable(paymentTable, payLabels.map(payLabel), payValues);
+    renderSummaryTable(categoryTable, catKeys.map(stripEmoji), catValues, catColors);
+    renderSummaryTable(paymentTable, payKeys.map(payLabel), payValues, payColors);
 
-    categoryChart = renderDonut("categoryChart", categoryChart, catLabels.map(function (l) { return (CATEGORY_ICONS[l] || "🏷️") + " " + l; }), catValues);
-    paymentChart = renderDonut("paymentChart", paymentChart, payLabels.map(payLabel), payValues);
+    categoryChart = renderDonut("categoryChart", categoryChart, catKeys.map(stripEmoji), catValues, catColors);
+    paymentChart = renderDonut("paymentChart", paymentChart, payKeys.map(payLabel), payValues, payColors);
   }
 
-  function renderSummaryTable(tableEl, labels, values) {
+  function renderSummaryTable(tableEl, labels, values, colors) {
     tableEl.innerHTML = "";
     var total = values.reduce(function (s, v) { return s + v; }, 0);
     if (!labels.length) {
-      tableEl.innerHTML = '<tr><td class="empty-msg">📭 データがありません</td></tr>';
+      tableEl.innerHTML = '<tr><td class="empty-msg">データがありません</td></tr>';
       return;
     }
     var thead = document.createElement("tr");
@@ -1099,7 +1148,8 @@
     labels.forEach(function (label, i) {
       var tr = document.createElement("tr");
       var pct = total > 0 ? Math.round((values[i] / total) * 100) : 0;
-      tr.innerHTML = "<td>" + label + "</td><td class=\"num\">" + formatYen(values[i]) + "</td><td class=\"num\">" + pct + "%</td>";
+      var dotHtml = colors && colors[i] ? '<span class="dot" style="background:' + colors[i] + '"></span>' : "";
+      tr.innerHTML = "<td>" + dotHtml + label + "</td><td class=\"num\">" + formatYen(values[i]) + "</td><td class=\"num\">" + pct + "%</td>";
       tableEl.appendChild(tr);
     });
     var totalTr = document.createElement("tr");
@@ -1107,7 +1157,7 @@
     tableEl.appendChild(totalTr);
   }
 
-  function renderDonut(canvasId, existingChart, labels, values) {
+  function renderDonut(canvasId, existingChart, labels, values, colors) {
     var ctx = document.getElementById(canvasId).getContext("2d");
     if (existingChart) existingChart.destroy();
     if (!labels.length) return null;
@@ -1117,7 +1167,7 @@
         labels: labels,
         datasets: [{
           data: values,
-          backgroundColor: labels.map(function (_, i) { return CHART_COLORS[i % CHART_COLORS.length]; }),
+          backgroundColor: colors,
           borderWidth: 2,
           borderColor: "#fff"
         }]
@@ -1147,13 +1197,17 @@
       row.className = "cat-edit-row";
       var nameEl = document.createElement("div");
       nameEl.className = "cat-name";
-      nameEl.textContent = (CATEGORY_ICONS[cat] || "🏷️") + " " + cat;
+      var dot = document.createElement("span");
+      dot.className = "dot";
+      dot.style.background = colorForCategory(cat);
+      nameEl.appendChild(dot);
+      nameEl.appendChild(document.createTextNode(stripEmoji(cat)));
       var delBtn = document.createElement("button");
       delBtn.textContent = "削除";
       delBtn.addEventListener("click", function () {
         state.pendingDeleteId = cat;
         state.pendingDeleteScreen = "category";
-        confirmMsg.textContent = "「" + cat + "」を削除しますか？\n（既存の記録のカテゴリ名はそのまま残ります）";
+        confirmMsg.textContent = "「" + stripEmoji(cat) + "」を削除しますか？\n（既存の記録のカテゴリ名はそのまま残ります）";
         confirmModal.classList.add("show");
       });
       row.appendChild(nameEl);
@@ -1164,14 +1218,14 @@
 
   document.getElementById("addCategoryBtn").addEventListener("click", function () {
     var name = newCategoryInput.value.trim();
-    if (!name) { showToast("⚠️ カテゴリ名を入力してください"); return; }
-    if (state.categories.includes(name)) { showToast("⚠️ すでに存在するカテゴリです"); return; }
+    if (!name) { showToast("カテゴリ名を入力してください"); return; }
+    if (state.categories.includes(name)) { showToast("すでに存在するカテゴリです"); return; }
     state.categories.push(name);
     saveCategories(state.categories);
     newCategoryInput.value = "";
     renderCategoryEditList();
     renderCategoryGroup();
-    showToast("✅ カテゴリを追加しました");
+    showToast("カテゴリを追加しました");
   });
 
   // ---------- 全データ削除 ----------
@@ -1219,7 +1273,7 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast("📤 CSVを書き出しました");
+    showToast("CSVを書き出しました");
   });
 
   // ---------- CSV 読み込み ----------
@@ -1228,13 +1282,14 @@
   importBtn.addEventListener("click", function () { importFile.click(); });
 
   function payIdFromLabel(label) {
-    var found = PAY_METHODS.find(function (p) { return p.label === label || p.csvLabel === label || p.id === label; });
+    var clean = stripEmoji(label);
+    var found = PAY_METHODS.find(function (p) { return p.label === clean || p.csvLabel === clean || p.id === clean; });
     if (found) return found.id;
-    var l = (label || "").toLowerCase();
+    var l = clean.toLowerCase();
     if (l.indexOf("カード") !== -1 || l.indexOf("card") !== -1) return "card";
     if (l.indexOf("現金") !== -1 || l.indexOf("cash") !== -1) return "cash";
     if (l.indexOf("paypay") !== -1) return "paypay";
-    return "cash";
+    return null;
   }
 
   function parseCSV(text) {
@@ -1311,7 +1366,7 @@
     reader.onload = function (ev) {
       try {
         var rows = parseCSV(String(ev.target.result));
-        if (!rows.length) { showToast("⚠️ 読み込めるデータがありません"); return; }
+        if (!rows.length) { showToast("読み込めるデータがありません"); return; }
 
         var headerMap = detectHeaderMap(rows[0]);
         var startIdx;
@@ -1335,7 +1390,7 @@
           var amount = parseFloat(colValue(cols, headerMap, "amount"));
           var payRaw = colValue(cols, headerMap, "pay");
           var place = colValue(cols, headerMap, "place");
-          var category = colValue(cols, headerMap, "category") || "その他";
+          var category = stripEmoji(colValue(cols, headerMap, "category")) || "その他";
           if (!date || !item || !amount || isNaN(amount)) { skipped++; continue; }
 
           var rec = {
@@ -1344,7 +1399,7 @@
             item: item,
             place: place,
             amount: amount,
-            payMethod: payIdFromLabel(payRaw),
+            payMethod: payIdFromLabel(payRaw) || "cash",
             category: category
           };
           var key = recordKey(rec);
@@ -1363,9 +1418,9 @@
         renderCategoryGroup();
         renderCategoryEditList();
         refreshListScreen();
-        showToast("✅ " + added + "件追加、" + skipped + "件スキップしました");
+        showToast(added + "件追加、" + skipped + "件スキップしました");
       } catch (err) {
-        showToast("⚠️ CSVの読み込みに失敗しました");
+        showToast("CSVの読み込みに失敗しました");
       }
       importFile.value = "";
     };
@@ -1378,12 +1433,12 @@
 
   // ---------- URLクエリからの自動記録（ショートカット連携） ----------
   function resolveCategoryParam(raw) {
-    var name = (raw || "").trim();
+    var name = stripEmoji(raw);
     if (!name) return "その他";
-    var found = state.categories.find(function (c) { return c === name; });
+    var found = state.categories.find(function (c) { return c === name || stripEmoji(c) === name; });
     if (found) return found;
     var lower = name.toLowerCase();
-    found = state.categories.find(function (c) { return c.toLowerCase() === lower; });
+    found = state.categories.find(function (c) { return stripEmoji(c).toLowerCase() === lower; });
     return found || "その他";
   }
 
@@ -1394,7 +1449,7 @@
       if (amount && amount > 0 && !isNaN(amount)) {
         var category = resolveCategoryParam(params.get("category"));
         var place = (params.get("place") || "").trim();
-        var payMethod = payIdFromLabel((params.get("pay") || "").trim());
+        var payMethod = payIdFromLabel((params.get("pay") || "").trim()) || "cash";
         var date = (params.get("date") || "").trim() || todayStr();
         var item = (params.get("item") || "").trim() || place || category;
         var now = new Date();
@@ -1411,7 +1466,7 @@
           category: category
         });
         saveRecords(state.records);
-        showToast("✅ 記録しました");
+        showToast("記録しました");
       }
       var cleanUrl = window.location.pathname + window.location.hash;
       window.history.replaceState({}, document.title, cleanUrl);
