@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>📒 かんたん家計簿</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
@@ -14,11 +14,25 @@
     --text: #333;
     --sub: #888;
     --danger: #ff5a5a;
+    --radius-lg: 18px;
     --radius: 16px;
+    --radius-md: 12px;
+    --radius-sm: 10px;
+    --space: 14px;
+    --space-sm: 8px;
+    --font-label: 13px;
+    --font-base: 16px;
+    --font-lg: 20px;
+    --safe-t: env(safe-area-inset-top, 0px);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+    --safe-l: env(safe-area-inset-left, 0px);
+    --safe-r: env(safe-area-inset-right, 0px);
   }
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0;
+    width: 100%;
+    overflow-x: hidden;
     background: var(--bg);
     color: var(--text);
     font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
@@ -29,63 +43,108 @@
     max-width: 480px;
     margin: 0 auto;
     min-height: 100vh;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    padding-bottom: 72px;
+    padding-bottom: calc(72px + var(--safe-b));
+    padding-left: var(--safe-l);
+    padding-right: var(--safe-r);
   }
   header.topbar {
     position: sticky; top: 0; z-index: 10;
     background: linear-gradient(135deg, var(--accent), #ffb37b);
     color: #fff;
-    padding: 14px 16px;
+    padding: calc(14px + var(--safe-t)) 16px 14px;
     font-size: 18px;
     font-weight: bold;
     text-align: center;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   }
-  main { flex: 1; padding: 12px; }
+  main { flex: 1; padding: 12px; min-width: 0; }
   .screen { display: none; }
   .screen.active { display: block; }
 
   .card {
     background: var(--card);
     border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 14px;
+    padding: var(--space);
+    margin-bottom: var(--space);
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    min-width: 0;
   }
 
   label.field-label {
     display: block;
-    font-size: 13px;
+    font-size: var(--font-label);
     color: var(--sub);
     margin-bottom: 6px;
     font-weight: bold;
   }
 
-  input[type="date"], input[type="text"], input[type="number"] {
+  input[type="date"], input[type="text"], input[type="number"], input[type="time"] {
     width: 100%;
+    min-width: 0;
     padding: 12px;
-    font-size: 16px;
+    font-size: var(--font-base);
+    text-align: left;
     border: 2px solid #eee;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: #fafafa;
     color: var(--text);
-    margin-bottom: 14px;
+    margin-bottom: var(--space);
+    -webkit-appearance: none;
+    appearance: none;
   }
   input:focus { outline: none; border-color: var(--accent); background: #fff; }
 
+  input[type="date"]::-webkit-date-and-time-value,
+  input[type="time"]::-webkit-date-and-time-value {
+    text-align: left;
+  }
+
+  .field-row.two-col {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-sm);
+    margin-bottom: var(--space);
+  }
+  .field-row.two-col .field-col { min-width: 0; }
+  .field-row.two-col input { margin-bottom: 0; }
+
+  .amount-field {
+    position: relative;
+    min-width: 0;
+    margin-bottom: var(--space);
+  }
+  .amount-field .yen-sign {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--accent);
+    pointer-events: none;
+  }
+  .amount-field input#amount {
+    padding-left: 36px;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 0;
+    background: #fff8f3;
+    border-color: #ffd9bd;
+  }
+
   .btn-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 14px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: var(--space-sm);
+    margin-bottom: var(--space);
   }
   .choice-btn {
-    flex: 1 1 auto;
-    min-width: 72px;
+    min-width: 0;
     padding: 12px 10px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     border: 2px solid #eee;
     background: #fafafa;
     font-size: 15px;
@@ -103,12 +162,12 @@
     display: block;
     width: 100%;
     padding: 18px;
-    font-size: 20px;
+    font-size: var(--font-lg);
     font-weight: bold;
     color: #fff;
     background: linear-gradient(135deg, var(--accent2), #39b6ad);
     border: none;
-    border-radius: 18px;
+    border-radius: var(--radius-lg);
     box-shadow: 0 4px 12px rgba(78,205,196,0.4);
     cursor: pointer;
     margin-top: 4px;
@@ -124,10 +183,19 @@
     background: #fff;
     box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
     z-index: 20;
+    padding-top: 6px;
+    padding-bottom: calc(var(--safe-b) + 12px);
+    padding-left: var(--safe-l);
+    padding-right: var(--safe-r);
   }
   .tab-btn {
     flex: 1;
-    padding: 10px 0 8px;
+    min-height: 44px;
+    padding: 6px 0 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
     font-size: 12px;
     color: var(--sub);
@@ -147,14 +215,16 @@
   .month-switch button {
     background: #fff;
     border: 2px solid #eee;
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     padding: 8px 14px;
     font-size: 16px;
     cursor: pointer;
+    flex: 0 0 auto;
   }
   .month-switch .month-label {
     font-size: 17px;
     font-weight: bold;
+    overflow-wrap: anywhere;
   }
 
   #monthTotal {
@@ -170,19 +240,22 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
     padding: 12px 8px;
     border-bottom: 1px solid #f0f0f0;
+    min-width: 0;
   }
   .list-item:last-child { border-bottom: none; }
-  .li-left { display: flex; flex-direction: column; gap: 2px; }
-  .li-item { font-weight: bold; font-size: 15px; }
-  .li-meta { font-size: 12px; color: var(--sub); }
-  .li-right { display: flex; align-items: center; gap: 10px; }
+  .li-left { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+  .li-item { font-weight: bold; font-size: 15px; overflow-wrap: anywhere; }
+  .li-meta { font-size: 12px; color: var(--sub); overflow-wrap: anywhere; }
+  .li-right { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
   .li-amount { font-weight: bold; font-size: 16px; white-space: nowrap; }
+  .li-actions { display: flex; }
   .li-actions button {
     border: none;
     background: #f0f0f0;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 6px 8px;
     font-size: 14px;
     margin-left: 4px;
@@ -227,39 +300,43 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
     padding: 10px 4px;
     border-bottom: 1px solid #f0f0f0;
+    min-width: 0;
   }
-  .cat-edit-row .cat-name { font-size: 15px; }
+  .cat-edit-row .cat-name { font-size: 15px; min-width: 0; overflow-wrap: anywhere; }
   .cat-edit-row button {
     border: none;
     background: #ffe5e5;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 6px 10px;
     font-size: 13px;
     cursor: pointer;
+    flex: 0 0 auto;
   }
   .add-cat-row {
     display: flex;
     gap: 8px;
     margin-top: 10px;
   }
-  .add-cat-row input { margin-bottom: 0; flex: 1; }
+  .add-cat-row input { margin-bottom: 0; flex: 1; min-width: 0; }
   .add-cat-row button {
     border: none;
     background: var(--accent2);
     color: #fff;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     padding: 0 16px;
     font-weight: bold;
     cursor: pointer;
+    flex: 0 0 auto;
   }
 
   .file-btn {
     display: block;
     width: 100%;
     padding: 14px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     border: 2px solid #eee;
     background: #fafafa;
     font-size: 15px;
@@ -274,7 +351,7 @@
 
   .toast {
     position: fixed;
-    bottom: 80px;
+    bottom: calc(72px + var(--safe-b) + 8px);
     left: 50%;
     transform: translateX(-50%) translateY(20px);
     background: rgba(40,40,40,0.9);
@@ -303,36 +380,25 @@
   .modal-overlay.show { display: flex; }
   .modal-box {
     background: #fff;
-    border-radius: 16px;
+    border-radius: var(--radius);
     padding: 20px;
     max-width: 320px;
     width: 100%;
     text-align: center;
   }
-  .modal-box p { font-size: 15px; margin-bottom: 18px; }
+  .modal-box p { font-size: 15px; margin-bottom: 18px; white-space: pre-line; }
   .modal-box.wide { max-width: 340px; text-align: left; max-height: 76vh; overflow-y: auto; }
   .modal-actions { display: flex; gap: 10px; }
   .modal-actions button {
     flex: 1;
     padding: 10px;
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     border: none;
     font-size: 14px;
     cursor: pointer;
   }
   .modal-actions .cancel-btn { background: #eee; }
   .modal-actions .confirm-btn { background: var(--danger); color: #fff; font-weight: bold; }
-
-  input[type="time"] {
-    width: 100%;
-    padding: 12px;
-    font-size: 16px;
-    border: 2px solid #eee;
-    border-radius: 12px;
-    background: #fafafa;
-    color: var(--text);
-    margin-bottom: 14px;
-  }
 
   .list-item.day-row { cursor: pointer; }
   .day-detail-list .list-item:last-child { border-bottom: none; }
@@ -347,11 +413,16 @@
     <!-- 入力画面 -->
     <section class="screen active" id="screen-input">
       <div class="card">
-        <label class="field-label" for="date">📅 日付</label>
-        <input type="date" id="date">
-
-        <label class="field-label" for="time">🕐 時刻</label>
-        <input type="time" id="time">
+        <div class="field-row two-col">
+          <div class="field-col">
+            <label class="field-label" for="date">📅 日付</label>
+            <input type="date" id="date">
+          </div>
+          <div class="field-col">
+            <label class="field-label" for="time">🕐 時刻</label>
+            <input type="time" id="time">
+          </div>
+        </div>
 
         <label class="field-label" for="item">✏️ 品目</label>
         <input type="text" id="item" placeholder="例：スーパーで買い物">
@@ -360,7 +431,10 @@
         <input type="text" id="place" placeholder="例：コンビニ">
 
         <label class="field-label" for="amount">💰 金額（円）</label>
-        <input type="number" id="amount" inputmode="numeric" placeholder="0">
+        <div class="amount-field">
+          <span class="yen-sign">¥</span>
+          <input type="number" id="amount" inputmode="numeric" placeholder="0">
+        </div>
 
         <label class="field-label">💳 支払い方法</label>
         <div class="btn-group" id="payMethodGroup"></div>
