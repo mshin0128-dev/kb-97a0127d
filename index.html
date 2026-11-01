@@ -40,6 +40,7 @@
     margin: 0; padding: 0;
     width: 100%;
     overflow-x: hidden;
+    overscroll-behavior-y: contain;
     background: var(--bg);
     color: var(--text);
     font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
@@ -459,9 +460,44 @@
   .list-item.day-row { cursor: pointer; }
   .day-detail-list .list-item:last-child { border-bottom: none; }
   #monthlyView, #dailyView { display: none; }
+
+  #ptrIndicator {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    max-width: 480px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 10px 16px;
+    padding-top: calc(var(--safe-t) + 10px);
+    background: var(--bg);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+    transform: translateY(-100%);
+    z-index: 30;
+    pointer-events: none;
+  }
+  #ptrIndicator .ptr-spinner {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    animation: ptr-spin 0.8s linear infinite;
+  }
+  @keyframes ptr-spin {
+    to { transform: rotate(360deg); }
+  }
 </style>
 </head>
 <body>
+<div id="ptrIndicator" aria-hidden="true">
+  <svg class="ptr-spinner" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path></svg>
+  <span id="ptrText">引っ張って更新</span>
+</div>
 <div id="app">
   <header class="topbar">かんたん家計簿</header>
 
@@ -1888,6 +1924,136 @@
     showToast("記録しました");
     window.history.replaceState({}, document.title, cleanUrl);
   }
+
+  // ---------- プルトゥリフレッシュ ----------
+  var ptrIndicatorEl = document.getElementById("ptrIndicator");
+  var ptrTextEl = document.getElementById("ptrText");
+  var PTR_THRESHOLD = 70;
+  var PTR_MAX = 120;
+  var PTR_RESISTANCE = 0.5;
+
+  var ptr = {
+    tracking: false,
+    active: false,
+    decided: false,
+    startX: 0,
+    startY: 0,
+    distance: 0,
+    refreshing: false
+  };
+
+  function ptrIsFormTarget(el) {
+    while (el && el !== document.body) {
+      if (el.nodeType === 1) {
+        var tag = el.tagName.toLowerCase();
+        if (tag === "input" || tag === "textarea" || tag === "select" || el.isContentEditable) return true;
+      }
+      el = el.parentElement;
+    }
+    return false;
+  }
+  function ptrScrollableAncestor(el) {
+    while (el && el !== document.body && el !== document.documentElement) {
+      if (el.nodeType === 1) {
+        var style = window.getComputedStyle(el);
+        if ((style.overflowY === "auto" || style.overflowY === "scroll") && el.scrollHeight > el.clientHeight) {
+          return el;
+        }
+      }
+      el = el.parentElement;
+    }
+    return null;
+  }
+  function ptrScrollTop(scrollEl) {
+    if (scrollEl) return scrollEl.scrollTop;
+    return window.scrollY || document.documentElement.scrollTop || 0;
+  }
+  function ptrIsModalOpen() {
+    return !!document.querySelector(".modal-overlay.show");
+  }
+  function ptrReset() {
+    ptr.tracking = false;
+    ptr.active = false;
+    ptr.decided = false;
+    ptr.distance = 0;
+  }
+  function ptrIndicatorHeight() {
+    return ptrIndicatorEl.getBoundingClientRect().height || 56;
+  }
+  function ptrSetIndicator(distance, textState) {
+    var full = ptrIndicatorHeight();
+    var shown = Math.min(distance, full);
+    ptrIndicatorEl.style.transition = "";
+    ptrIndicatorEl.style.transform = "translateY(" + (shown - full) + "px)";
+    ptrTextEl.textContent = textState === "refreshing" ? "更新中" : textState === "release" ? "離して更新" : "引っ張って更新";
+  }
+  function ptrHide() {
+    ptrIndicatorEl.style.transition = "transform 0.2s ease";
+    ptrIndicatorEl.style.transform = "translateY(-100%)";
+  }
+
+  document.addEventListener("touchstart", function (e) {
+    if (ptr.refreshing) return;
+    if (e.touches.length !== 1) { ptrReset(); return; }
+    if (ptrIsModalOpen()) return;
+    if (ptrIsFormTarget(e.target)) return;
+    var scrollEl = ptrScrollableAncestor(e.target);
+    if (ptrScrollTop(scrollEl) > 0) return;
+    ptr.tracking = true;
+    ptr.decided = false;
+    ptr.active = false;
+    ptr.distance = 0;
+    ptr.startX = e.touches[0].clientX;
+    ptr.startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener("touchmove", function (e) {
+    if (!ptr.tracking || ptr.refreshing) return;
+    if (e.touches.length !== 1) { ptrReset(); return; }
+    var touch = e.touches[0];
+    var dx = touch.clientX - ptr.startX;
+    var dy = touch.clientY - ptr.startY;
+    if (!ptr.decided) {
+      ptr.decided = true;
+      ptr.active = dy > 0 && Math.abs(dy) > Math.abs(dx);
+      if (!ptr.active) { ptr.tracking = false; return; }
+    }
+    if (!ptr.active) return;
+    if (dy <= 0) {
+      ptr.distance = 0;
+      ptrHide();
+      return;
+    }
+    e.preventDefault();
+    ptr.distance = Math.min(dy * PTR_RESISTANCE, PTR_MAX);
+    ptrSetIndicator(ptr.distance, ptr.distance >= PTR_THRESHOLD ? "release" : "pull");
+  }, { passive: false });
+
+  function ptrFinish() {
+    if (!ptr.tracking) return;
+    var shouldRefresh = ptr.active && ptr.distance >= PTR_THRESHOLD;
+    ptr.tracking = false;
+    if (!shouldRefresh) {
+      ptrReset();
+      ptrHide();
+      return;
+    }
+    ptr.refreshing = true;
+    ptrSetIndicator(ptrIndicatorHeight(), "refreshing");
+    var finishRefresh = function () {
+      ptr.refreshing = false;
+      ptrReset();
+      ptrHide();
+    };
+    if (isSyncConfigured()) {
+      syncRefresh().then(finishRefresh).catch(finishRefresh);
+    } else {
+      refreshAllScreens();
+      setTimeout(finishRefresh, 400);
+    }
+  }
+  document.addEventListener("touchend", ptrFinish);
+  document.addEventListener("touchcancel", ptrFinish);
 
   // ---------- 初期描画 ----------
   handleUrlAutoAdd();
