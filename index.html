@@ -360,6 +360,18 @@
   .file-btn.import { background: #eaf3ff; border-color: #cfe4ff; }
   .file-btn.danger { background: #fff0f0; border-color: #ffd6d6; color: var(--danger); }
 
+  .sync-btn-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .sync-btn-row .file-btn { flex: 1; margin-bottom: 0; }
+  #syncStatus {
+    font-size: 12px;
+    color: var(--sub);
+    margin-bottom: 12px;
+    white-space: pre-line;
+    line-height: 1.5;
+  }
+  #syncStatus.error { color: var(--danger); }
+  #syncStatus.ok { color: var(--accent2); }
+
   .toast {
     position: fixed;
     bottom: calc(72px + var(--safe-b) + 8px);
@@ -510,6 +522,19 @@
     <!-- 設定画面 -->
     <section class="screen" id="screen-settings">
       <div class="card">
+        <div class="section-title">スプレッドシート連携</div>
+        <label class="field-label" for="syncUrl">連携URL</label>
+        <input type="text" id="syncUrl" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <label class="field-label" for="syncToken">合言葉</label>
+        <input type="password" id="syncToken" placeholder="合言葉を入力" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <div class="sync-btn-row">
+          <button class="file-btn" id="syncSaveBtn">保存</button>
+          <button class="file-btn" id="syncTestBtn">接続テスト</button>
+        </div>
+        <div id="syncStatus"></div>
+        <button class="file-btn" id="syncMigrateBtn">端末内の記録をシートへ移す</button>
+      </div>
+      <div class="card">
         <div class="section-title">カテゴリ編集</div>
         <div id="categoryEditList"></div>
         <div class="add-cat-row">
@@ -617,8 +642,172 @@
     localStorage.setItem(CATEGORY_KEY, JSON.stringify(list));
   }
 
+  // ---------- スプレッドシート連携設定の読み書き ----------
+  var SYNC_CONFIG_KEY = "kakeibo_sync_v1";
+  var SYNC_CACHE_KEY = "kakeibo_sync_cache_v1";
+
+  function loadSyncConfig() {
+    try {
+      var raw = localStorage.getItem(SYNC_CONFIG_KEY);
+      var cfg = raw ? JSON.parse(raw) : null;
+      if (!cfg || typeof cfg !== "object") return { url: "", token: "" };
+      return { url: String(cfg.url || "").trim(), token: String(cfg.token || "") };
+    } catch (e) { return { url: "", token: "" }; }
+  }
+  function saveSyncConfig(cfg) {
+    localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(cfg));
+  }
+  function loadSyncCache() {
+    try {
+      var raw = localStorage.getItem(SYNC_CACHE_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      list.forEach(function (r) { if (typeof r.place !== "string") r.place = ""; });
+      return list;
+    } catch (e) { return []; }
+  }
+  function saveSyncCache(records) {
+    localStorage.setItem(SYNC_CACHE_KEY, JSON.stringify(records));
+  }
+  function isSyncConfigured() {
+    return !!(state.sync && state.sync.url && state.sync.token);
+  }
+  function buildQuery(params) {
+    var qs = new URLSearchParams();
+    Object.keys(params).forEach(function (k) {
+      if (params[k] !== undefined && params[k] !== null && params[k] !== "") qs.set(k, params[k]);
+    });
+    return qs.toString();
+  }
+  function gasBaseUrl() {
+    return state.sync.url.replace(/\/+$/, "");
+  }
+  function gasFetchList() {
+    var url = gasBaseUrl() + "?" + buildQuery({ action: "list", token: state.sync.token });
+    return fetch(url, { method: "GET", redirect: "follow" })
+      .then(function (res) { return res.text(); })
+      .then(function (text) {
+        var json;
+        try { json = JSON.parse(text); } catch (e) { throw new Error("応答の形式が正しくありません"); }
+        if (!json.ok) throw new Error(json.error || "取得に失敗しました");
+        return json.records || [];
+      });
+  }
+  function gasAdd(rec) {
+    var params = {
+      action: "add",
+      token: state.sync.token,
+      amount: rec.amount,
+      category: rec.category,
+      place: rec.place || "",
+      pay: rec.payMethod,
+      item: rec.item || "",
+      date: rec.date,
+      time: timeOf(rec) || ""
+    };
+    var url = gasBaseUrl() + "?" + buildQuery(params);
+    return fetch(url, { method: "GET", redirect: "follow" })
+      .then(function (res) { return res.text(); })
+      .then(function (text) {
+        if (/^エラー/.test(text)) throw new Error(text);
+        return text;
+      });
+  }
+  function gasDelete(id) {
+    var url = gasBaseUrl() + "?" + buildQuery({ action: "delete", token: state.sync.token, id: id });
+    return fetch(url, { method: "GET", redirect: "follow" })
+      .then(function (res) { return res.text(); })
+      .then(function (text) {
+        var json;
+        try { json = JSON.parse(text); } catch (e) { throw new Error("応答の形式が正しくありません"); }
+        if (!json.ok) throw new Error(json.error || "削除に失敗しました");
+        return json;
+      });
+  }
+  function gasImport(payload) {
+    var body = Object.assign({ action: "import", token: state.sync.token }, payload);
+    return fetch(gasBaseUrl(), {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(body),
+      redirect: "follow"
+    })
+      .then(function (res) { return res.text(); })
+      .then(function (text) {
+        var json;
+        try { json = JSON.parse(text); } catch (e) { throw new Error("応答の形式が正しくありません"); }
+        if (!json.ok) throw new Error(json.error || "取り込みに失敗しました");
+        return json;
+      });
+  }
+  function normalizeServerRecords(list) {
+    return (list || []).map(function (r) {
+      var date = String(r.date || "");
+      var time = String(r.time || "00:00");
+      return {
+        id: String(r.id),
+        date: date,
+        time: date + " " + time,
+        item: String(r.item || ""),
+        place: String(r.place || ""),
+        amount: Number(r.amount) || 0,
+        payMethod: String(r.payMethod || "cash"),
+        category: String(r.category || "")
+      };
+    });
+  }
+  function refreshAllScreens() {
+    refreshListScreen();
+    if (document.getElementById("screen-stats").classList.contains("active")) renderStats();
+  }
+  var lastSyncResult = null; // { ok: bool, time: "HH:MM", message?: string, count?: number }
+  function renderSyncStatus(message, kind) {
+    var el = document.getElementById("syncStatus");
+    if (!el) return;
+    if (message) {
+      el.textContent = message;
+      el.className = kind === "error" ? "error" : kind === "ok" ? "ok" : "";
+      return;
+    }
+    if (!isSyncConfigured()) {
+      el.textContent = "未設定（端末内のみに保存されます）";
+      el.className = "";
+      return;
+    }
+    if (lastSyncResult && !lastSyncResult.ok) {
+      el.textContent = "シートに接続できませんでした。前回保存した記録を表示しています\n（" + lastSyncResult.time + "・原因：" + lastSyncResult.message + "）";
+      el.className = "error";
+      return;
+    }
+    if (lastSyncResult && lastSyncResult.ok) {
+      el.textContent = "設定済み：" + state.sync.url + "\n（最終同期 " + lastSyncResult.time + "・" + lastSyncResult.count + "件）";
+      el.className = "ok";
+      return;
+    }
+    el.textContent = "設定済み：" + state.sync.url;
+    el.className = "ok";
+  }
+  function syncRefresh() {
+    if (!isSyncConfigured()) return Promise.resolve();
+    return gasFetchList().then(function (records) {
+      state.records = normalizeServerRecords(records);
+      saveSyncCache(state.records);
+      lastSyncResult = { ok: true, time: currentTimeStr(), count: state.records.length };
+      renderSyncStatus("接続済み：" + state.records.length + "件の記録を取得しました（" + lastSyncResult.time + "）", "ok");
+      refreshAllScreens();
+    }).catch(function (err) {
+      lastSyncResult = { ok: false, time: currentTimeStr(), message: err.message };
+      var msg = "シートに接続できませんでした。前回保存した記録を表示しています\n（原因：" + err.message + "）";
+      renderSyncStatus(msg, "error");
+      showToast("シートに接続できませんでした。前回保存した記録を表示しています（原因：" + err.message + "）");
+    });
+  }
+
   var state = {
-    records: loadRecords(),
+    records: (function () {
+      var cfg = loadSyncConfig();
+      return (cfg.url && cfg.token) ? loadSyncCache() : loadRecords();
+    })(),
+    sync: loadSyncConfig(),
     categories: loadCategories(),
     selectedPay: PAY_METHODS[0].id,
     selectedCategory: null,
@@ -689,7 +878,7 @@
       });
       if (target === "list") refreshListScreen();
       if (target === "stats") renderStats();
-      if (target === "settings") renderCategoryEditList();
+      if (target === "settings") { renderCategoryEditList(); renderSyncSettingsForm(); }
     });
   });
 
@@ -771,6 +960,30 @@
     if (!amount || amount <= 0) { showToast("金額を入力してください"); return; }
 
     var recordTime = date + " " + time;
+    var payload = {
+      date: date,
+      time: recordTime,
+      item: item,
+      place: place,
+      amount: amount,
+      payMethod: state.selectedPay,
+      category: state.selectedCategory
+    };
+
+    if (isSyncConfigured()) {
+      var editingId = state.editingId;
+      addBtn.disabled = true;
+      var chain = editingId ? gasDelete(editingId) : Promise.resolve();
+      chain.then(function () { return gasAdd(payload); })
+        .then(function () {
+          showToast(editingId ? "更新しました" : "記録しました！");
+          resetInputForm();
+          return syncRefresh();
+        })
+        .catch(function (err) { showToast("通信エラー：" + err.message); })
+        .then(function () { addBtn.disabled = false; });
+      return;
+    }
 
     if (state.editingId) {
       var rec = state.records.find(function (r) { return r.id === state.editingId; });
@@ -1054,10 +1267,18 @@
   document.getElementById("confirmCancel").addEventListener("click", closeConfirm);
   document.getElementById("confirmOk").addEventListener("click", function () {
     if (state.pendingDeleteScreen === "record" && state.pendingDeleteId) {
-      state.records = state.records.filter(function (r) { return r.id !== state.pendingDeleteId; });
-      saveRecords(state.records);
-      refreshListScreen();
-      showToast("削除しました");
+      var deleteId = state.pendingDeleteId;
+      if (isSyncConfigured()) {
+        gasDelete(deleteId).then(function () {
+          showToast("削除しました");
+          return syncRefresh();
+        }).catch(function (err) { showToast("通信エラー：" + err.message); });
+      } else {
+        state.records = state.records.filter(function (r) { return r.id !== deleteId; });
+        saveRecords(state.records);
+        refreshListScreen();
+        showToast("削除しました");
+      }
     } else if (state.pendingDeleteScreen === "category" && state.pendingDeleteId) {
       var cat = state.pendingDeleteId;
       state.categories = state.categories.filter(function (c) { return c !== cat; });
@@ -1181,6 +1402,83 @@
       }
     });
   }
+
+  // ---------- 設定画面：スプレッドシート連携 ----------
+  var syncUrlInput = document.getElementById("syncUrl");
+  var syncTokenInput = document.getElementById("syncToken");
+
+  function renderSyncSettingsForm() {
+    syncUrlInput.value = state.sync.url || "";
+    syncTokenInput.value = state.sync.token || "";
+    renderSyncStatus();
+  }
+
+  document.getElementById("syncSaveBtn").addEventListener("click", function () {
+    var url = syncUrlInput.value.trim();
+    var token = syncTokenInput.value;
+    if (url && !/^https?:\/\//.test(url)) {
+      renderSyncStatus("連携URLはhttp(s)://から始めてください", "error");
+      return;
+    }
+    state.sync = { url: url, token: token };
+    saveSyncConfig(state.sync);
+    if (!url || !token) {
+      renderSyncStatus("未設定（端末内のみに保存されます）", null);
+      showToast("連携設定を解除しました");
+      return;
+    }
+    renderSyncStatus("接続を確認しています…", null);
+    syncRefresh().then(function () {
+      showToast("連携設定を保存しました");
+    });
+  });
+
+  document.getElementById("syncTestBtn").addEventListener("click", function () {
+    var url = syncUrlInput.value.trim();
+    var token = syncTokenInput.value;
+    if (!url || !token) { renderSyncStatus("連携URLと合言葉を入力してください", "error"); return; }
+    if (!/^https?:\/\//.test(url)) { renderSyncStatus("連携URLはhttp(s)://から始めてください", "error"); return; }
+    renderSyncStatus("接続テスト中…", null);
+    var testUrl = url.replace(/\/+$/, "") + "?" + buildQuery({ action: "list", token: token });
+    fetch(testUrl, { method: "GET", redirect: "follow" })
+      .then(function (res) { return res.text(); })
+      .then(function (text) {
+        var json;
+        try { json = JSON.parse(text); } catch (e) { throw new Error("応答の形式が正しくありません"); }
+        if (!json.ok) throw new Error(json.error || "接続に失敗しました");
+        renderSyncStatus("接続成功：" + json.records.length + "件の記録を確認しました", "ok");
+      })
+      .catch(function (err) {
+        renderSyncStatus("接続テストに失敗しました：" + err.message, "error");
+      });
+  });
+
+  document.getElementById("syncMigrateBtn").addEventListener("click", function () {
+    if (!isSyncConfigured()) { renderSyncStatus("先に連携URLと合言葉を保存してください", "error"); return; }
+    var localRecords = loadRecords();
+    if (!localRecords.length) { renderSyncStatus("端末内に移す記録がありません", "error"); return; }
+    var payloadRecords = localRecords.map(function (r) {
+      return {
+        id: "",
+        date: r.date,
+        time: timeOf(r) || "00:00",
+        item: r.item,
+        amount: r.amount,
+        payMethod: r.payMethod,
+        place: r.place || "",
+        category: r.category
+      };
+    });
+    renderSyncStatus("送信中…", null);
+    gasImport({ records: payloadRecords }).then(function (json) {
+      renderSyncStatus("端末内の記録をシートへ送信しました（追加" + json.added + "件／スキップ" + json.skipped + "件）", "ok");
+      showToast(json.added + "件追加、" + json.skipped + "件スキップしました");
+      return syncRefresh();
+    }).catch(function (err) {
+      renderSyncStatus("送信に失敗しました：" + err.message, "error");
+      showToast("通信エラー：" + err.message);
+    });
+  });
 
   // ---------- 設定画面：カテゴリ編集 ----------
   var categoryEditList = document.getElementById("categoryEditList");
@@ -1364,8 +1662,18 @@
     if (!file) return;
     var reader = new FileReader();
     reader.onload = function (ev) {
+      var csvText = String(ev.target.result);
+      if (isSyncConfigured()) {
+        gasImport({ csv: csvText }).then(function (json) {
+          showToast(json.added + "件追加、" + json.skipped + "件スキップしました");
+          return syncRefresh();
+        }).catch(function (err) {
+          showToast("通信エラー：" + err.message);
+        }).then(function () { importFile.value = ""; });
+        return;
+      }
       try {
-        var rows = parseCSV(String(ev.target.result));
+        var rows = parseCSV(csvText);
         if (!rows.length) { showToast("読み込めるデータがありません"); return; }
 
         var headerMap = detectHeaderMap(rows[0]);
@@ -1455,18 +1763,27 @@
         var now = new Date();
         var time = date + " " + pad2(now.getHours()) + ":" + pad2(now.getMinutes());
 
-        state.records.push({
-          id: uid(),
-          date: date,
-          time: time,
-          item: item,
-          place: place,
-          amount: amount,
-          payMethod: payMethod,
-          category: category
-        });
-        saveRecords(state.records);
-        showToast("記録しました");
+        if (isSyncConfigured()) {
+          gasAdd({ date: date, time: time, item: item, place: place, amount: amount, payMethod: payMethod, category: category })
+            .then(function () {
+              showToast("記録しました");
+              return syncRefresh();
+            })
+            .catch(function (err) { showToast("通信エラー：" + err.message); });
+        } else {
+          state.records.push({
+            id: uid(),
+            date: date,
+            time: time,
+            item: item,
+            place: place,
+            amount: amount,
+            payMethod: payMethod,
+            category: category
+          });
+          saveRecords(state.records);
+          showToast("記録しました");
+        }
       }
       var cleanUrl = window.location.pathname + window.location.hash;
       window.history.replaceState({}, document.title, cleanUrl);
@@ -1479,6 +1796,11 @@
   renderCategoryGroup();
   refreshListScreen();
   renderCategoryEditList();
+  renderSyncSettingsForm();
+  if (isSyncConfigured()) {
+    renderSyncStatus("読み込み中…", null);
+    syncRefresh();
+  }
 })();
 </script>
 </body>
