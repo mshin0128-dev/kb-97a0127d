@@ -1129,13 +1129,31 @@
   var listMonthLabel = document.getElementById("listMonthLabel");
   var monthTotalEl = document.getElementById("monthTotal");
 
-  document.getElementById("listPrevMonth").addEventListener("click", function () {
-    state.listMonth = shiftMonth(state.listMonth, -1);
+  function animateListSwitch(delta) {
+    var el = document.getElementById(
+      state.listView === "raw" ? "listCard" : state.listView === "monthly" ? "monthlyView" : "dailyView"
+    );
+    if (!el) return;
+    el.style.transition = "none";
+    el.style.opacity = "0";
+    el.style.transform = "translateX(" + (delta > 0 ? "16px" : "-16px") + ")";
+    el.offsetHeight;
+    el.style.transition = "transform 0.2s ease, opacity 0.2s ease";
+    el.style.opacity = "1";
+    el.style.transform = "translateX(0)";
+  }
+
+  function changeListMonth(delta) {
+    state.listMonth = shiftMonth(state.listMonth, delta);
     refreshListScreen();
+    animateListSwitch(delta);
+  }
+
+  document.getElementById("listPrevMonth").addEventListener("click", function () {
+    changeListMonth(-1);
   });
   document.getElementById("listNextMonth").addEventListener("click", function () {
-    state.listMonth = shiftMonth(state.listMonth, 1);
-    refreshListScreen();
+    changeListMonth(1);
   });
 
   document.getElementById("syncRefreshBtn").addEventListener("click", function () {
@@ -2054,6 +2072,51 @@
   }
   document.addEventListener("touchend", ptrFinish);
   document.addEventListener("touchcancel", ptrFinish);
+
+  // ---------- 一覧画面の横スワイプで月切替 ----------
+  var screenListEl = document.getElementById("screen-list");
+  var listSwipe = { tracking: false, startX: 0, startY: 0 };
+
+  function listSwipeScrollableAncestorX(el) {
+    while (el && el.nodeType === 1 && el !== screenListEl) {
+      var style = window.getComputedStyle(el);
+      if ((style.overflowX === "auto" || style.overflowX === "scroll") && el.scrollWidth > el.clientWidth) {
+        return el;
+      }
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  screenListEl.addEventListener("touchstart", function (e) {
+    if (e.touches.length !== 1 || ptrIsModalOpen() || listSwipeScrollableAncestorX(e.target)) {
+      listSwipe.tracking = false;
+      return;
+    }
+    listSwipe.tracking = true;
+    listSwipe.startX = e.touches[0].clientX;
+    listSwipe.startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  screenListEl.addEventListener("touchmove", function (e) {
+    if (e.touches.length !== 1) listSwipe.tracking = false;
+  }, { passive: true });
+
+  screenListEl.addEventListener("touchend", function (e) {
+    if (!listSwipe.tracking) return;
+    listSwipe.tracking = false;
+    var touch = e.changedTouches[0];
+    if (!touch) return;
+    var dx = touch.clientX - listSwipe.startX;
+    var dy = touch.clientY - listSwipe.startY;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      changeListMonth(dx < 0 ? 1 : -1);
+    }
+  }, { passive: true });
+
+  screenListEl.addEventListener("touchcancel", function () {
+    listSwipe.tracking = false;
+  }, { passive: true });
 
   // ---------- 初期描画 ----------
   handleUrlAutoAdd();
