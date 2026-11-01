@@ -150,6 +150,9 @@
     gap: var(--space-sm);
     margin-bottom: var(--space);
   }
+  #payMethodGroup {
+    grid-template-columns: repeat(3, 1fr);
+  }
   .choice-btn {
     min-width: 0;
     padding: 12px 10px;
@@ -654,7 +657,7 @@
         <input type="file" id="importFile" accept=".csv" style="display:none;">
         <button class="file-btn danger" id="clearAllBtn">全データを削除</button>
       </div>
-      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.01c</div>
+      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.01d</div>
     </section>
   </main>
 
@@ -685,13 +688,16 @@
   var STORAGE_KEY = "kakeibo_records_v1";
   var CATEGORY_KEY = "kakeibo_categories_v1";
   var PAY_METHODS = [
-    { id: "card", label: "カード", csvLabel: "カード" },
+    { id: "card", label: "カード", csvLabel: "カード", hidden: true },
     { id: "cash", label: "現金", csvLabel: "現金" },
     { id: "paypay", label: "PayPay", csvLabel: "PayPay" },
     { id: "aeon", label: "カード（イオン）", csvLabel: "カード（イオン）" },
     { id: "rakuten", label: "カード（楽天）", csvLabel: "カード（楽天）" },
     { id: "jcb", label: "カード（JCB）", csvLabel: "カード（JCB）" }
   ];
+  // 入力画面のボタン表示順（配列順は色の割当に使うため変更しない）
+  var INPUT_PAY_ORDER = ["aeon", "rakuten", "jcb", "cash", "paypay"];
+  var DEFAULT_PAY_ID = "aeon";
   var DEFAULT_CATEGORIES = ["食費", "日用品", "交通", "娯楽", "サブスク", "その他"];
   var CHART_COLORS = ["#ff8a5b", "#4ecdc4", "#ffd166", "#6a89cc", "#c56cf0", "#78e08f", "#f8a5c2", "#596275"];
 
@@ -939,7 +945,7 @@
     })(),
     sync: loadSyncConfig(),
     categories: loadCategories(),
-    selectedPay: PAY_METHODS[0].id,
+    selectedPay: DEFAULT_PAY_ID,
     selectedCategory: null,
     listMonth: todayMonthKey(),
     statsMonth: todayMonthKey(),
@@ -1028,7 +1034,9 @@
 
   function renderPayGroup() {
     payGroup.innerHTML = "";
-    PAY_METHODS.forEach(function (pm) {
+    INPUT_PAY_ORDER.forEach(function (id) {
+      var pm = PAY_METHODS.find(function (p) { return p.id === id; });
+      if (!pm || pm.hidden) return;
       var b = document.createElement("div");
       b.className = "choice-btn" + (state.selectedPay === pm.id ? " selected" : "");
       var dot = document.createElement("span");
@@ -1071,7 +1079,7 @@
     itemInput.value = "";
     placeInput.value = "";
     amountInput.value = "";
-    state.selectedPay = PAY_METHODS[0].id;
+    state.selectedPay = DEFAULT_PAY_ID;
     state.selectedCategory = state.categories[0] || "";
     state.editingId = null;
     addBtn.textContent = "記録する";
@@ -1394,7 +1402,7 @@
     itemInput.value = rec.item;
     placeInput.value = rec.place || "";
     amountInput.value = rec.amount;
-    state.selectedPay = rec.payMethod;
+    state.selectedPay = (rec.payMethod === "card") ? DEFAULT_PAY_ID : rec.payMethod;
     state.selectedCategory = rec.category;
     addBtn.textContent = "更新する";
     renderPayGroup();
