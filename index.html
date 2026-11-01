@@ -90,7 +90,7 @@
     font-weight: bold;
   }
 
-  input[type="date"], input[type="text"], input[type="number"], input[type="time"] {
+  input[type="date"], input[type="text"], input[type="number"], input[type="time"], select {
     width: 100%;
     min-width: 0;
     padding: 12px;
@@ -104,7 +104,7 @@
     -webkit-appearance: none;
     appearance: none;
   }
-  input:focus { outline: none; border-color: var(--accent); background: #fff; }
+  input:focus, select:focus { outline: none; border-color: var(--accent); background: #fff; }
 
   input[type="date"]::-webkit-date-and-time-value,
   input[type="time"]::-webkit-date-and-time-value {
@@ -135,7 +135,8 @@
     color: var(--accent);
     pointer-events: none;
   }
-  .amount-field input#amount {
+  .amount-field input#amount,
+  .amount-field input#subAmount {
     padding-left: 36px;
     font-size: 24px;
     font-weight: bold;
@@ -170,7 +171,7 @@
     font-weight: bold;
   }
 
-  #addBtn {
+  #addBtn, #subSaveBtn {
     display: block;
     width: 100%;
     padding: 18px;
@@ -184,7 +185,7 @@
     cursor: pointer;
     margin-top: 4px;
   }
-  #addBtn:active { transform: scale(0.98); }
+  #addBtn:active, #subSaveBtn:active { transform: scale(0.98); }
 
   .tabbar {
     position: fixed;
@@ -250,7 +251,7 @@
     overflow-wrap: anywhere;
   }
 
-  #monthTotal {
+  #monthTotal, #subMonthly, #subYearly {
     font-size: 26px;
     font-weight: bold;
     color: var(--accent);
@@ -626,6 +627,50 @@
       </div>
     </section>
 
+    <!-- サブスク管理画面 -->
+    <section class="screen" id="screen-subsc">
+      <div class="card">
+        <div class="section-title">サブスク登録</div>
+        <label class="field-label" for="subName">サービス名</label>
+        <input type="text" id="subName" placeholder="例：動画配信サービス">
+
+        <label class="field-label" for="subAmount">金額（円）</label>
+        <div class="amount-field">
+          <span class="yen-sign">¥</span>
+          <input type="number" id="subAmount" inputmode="numeric" placeholder="0">
+        </div>
+
+        <div class="field-row two-col">
+          <div class="field-col">
+            <label class="field-label" for="subCycle">周期</label>
+            <select id="subCycle">
+              <option value="monthly">月額</option>
+              <option value="yearly">年額</option>
+            </select>
+          </div>
+          <div class="field-col">
+            <label class="field-label" for="subDate">基準日（次回計算用）</label>
+            <input type="date" id="subDate">
+          </div>
+        </div>
+
+        <label class="field-label" for="subPay">支払い方法</label>
+        <select id="subPay"></select>
+
+        <button id="subSaveBtn">登録する</button>
+      </div>
+      <div class="card">
+        <div id="subMonthly">¥0</div>
+        <div class="total-sub">月あたりの合計（概算）</div>
+        <div id="subYearly">¥0</div>
+        <div class="total-sub">年あたりの合計（概算）</div>
+      </div>
+      <div class="card">
+        <div class="section-title">登録中のサブスク</div>
+        <div id="subList"></div>
+      </div>
+    </section>
+
     <!-- 設定画面 -->
     <section class="screen" id="screen-settings">
       <div class="card">
@@ -657,7 +702,7 @@
         <input type="file" id="importFile" accept=".csv" style="display:none;">
         <button class="file-btn danger" id="clearAllBtn">全データを削除</button>
       </div>
-      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.01d</div>
+      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.01e</div>
     </section>
   </main>
 
@@ -665,6 +710,7 @@
     <button class="tab-btn active" data-screen="input"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>入力</button>
     <button class="tab-btn" data-screen="list"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>一覧</button>
     <button class="tab-btn" data-screen="stats"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>集計</button>
+    <button class="tab-btn" data-screen="subsc"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span>サブスク</button>
     <button class="tab-btn" data-screen="settings"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>設定</button>
   </nav>
 </div>
@@ -1014,6 +1060,7 @@
       });
       if (target === "list") { refreshListScreen(); autoSyncRefresh(); }
       if (target === "stats") { renderStats(); autoSyncRefresh(); }
+      if (target === "subsc") { renderSubscScreen(); }
       if (target === "settings") { renderCategoryEditList(); renderSyncSettingsForm(); }
       if (target === "input" || target === "settings") updateSyncNotice();
     });
@@ -2156,12 +2203,220 @@
     ptrHide();
   });
 
+  // ---------- サブスク管理（家計簿の記録・localStorageとは完全に独立） ----------
+  var SUBSC_KEY = "kakeibo_subscriptions";
+
+  function loadSubscriptions() {
+    try {
+      var raw = localStorage.getItem(SUBSC_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list : [];
+    } catch (e) { return []; }
+  }
+  function saveSubscriptions(list) {
+    localStorage.setItem(SUBSC_KEY, JSON.stringify(list));
+  }
+
+  var subscriptions = loadSubscriptions();
+  var subEditingId = null;
+
+  var subNameInput = document.getElementById("subName");
+  var subAmountInput = document.getElementById("subAmount");
+  var subCycleSelect = document.getElementById("subCycle");
+  var subDateInput = document.getElementById("subDate");
+  var subPaySelect = document.getElementById("subPay");
+  var subSaveBtn = document.getElementById("subSaveBtn");
+  var subListEl = document.getElementById("subList");
+  var subMonthlyEl = document.getElementById("subMonthly");
+  var subYearlyEl = document.getElementById("subYearly");
+
+  function renderSubPaySelect() {
+    subPaySelect.innerHTML = "";
+    PAY_METHODS.forEach(function (p) {
+      if (p.hidden) return;
+      var opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = stripEmoji(p.label);
+      subPaySelect.appendChild(opt);
+    });
+  }
+
+  function daysInMonth(y, m0) { return new Date(y, m0 + 1, 0).getDate(); }
+  function clampDayOfMonth(y, m0, day) { return new Date(y, m0, Math.min(day, daysInMonth(y, m0))); }
+  function parseBaseDate(s) {
+    var p = s.split("-").map(function (n) { return parseInt(n, 10); });
+    return { m0: p[1] - 1, d: p[2] };
+  }
+  function subNextDate(sub, today) {
+    var base = parseBaseDate(sub.baseDate);
+    var cand;
+    if (sub.cycle === "yearly") {
+      cand = clampDayOfMonth(today.getFullYear(), base.m0, base.d);
+      if (cand < today) cand = clampDayOfMonth(today.getFullYear() + 1, base.m0, base.d);
+    } else {
+      cand = clampDayOfMonth(today.getFullYear(), today.getMonth(), base.d);
+      if (cand < today) {
+        var m0 = today.getMonth() + 1, y = today.getFullYear();
+        if (m0 > 11) { m0 = 0; y++; }
+        cand = clampDayOfMonth(y, m0, base.d);
+      }
+    }
+    return cand;
+  }
+
+  function renderSubTotals() {
+    var monthlySum = 0, yearlySum = 0;
+    subscriptions.forEach(function (s) {
+      if (s.cycle === "yearly") yearlySum += s.amount; else monthlySum += s.amount;
+    });
+    subMonthlyEl.textContent = formatYen(monthlySum + yearlySum / 12);
+    subYearlyEl.textContent = formatYen(monthlySum * 12 + yearlySum);
+  }
+
+  function renderSubList() {
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var entries = subscriptions.map(function (s) {
+      return { sub: s, next: subNextDate(s, today) };
+    });
+    entries.sort(function (a, b) { return a.next - b.next; });
+
+    subListEl.innerHTML = "";
+    if (!entries.length) {
+      var empty = document.createElement("div");
+      empty.className = "empty-msg";
+      empty.textContent = "登録中のサブスクはありません";
+      subListEl.appendChild(empty);
+      return;
+    }
+
+    entries.forEach(function (entry) {
+      var s = entry.sub, next = entry.next;
+      var days = Math.round((next - today) / 86400000);
+      var daysLabel = days === 0 ? "今日" : "あと" + days + "日";
+      var cycleLabel = s.cycle === "yearly" ? "年額" : "月額";
+      var nextLabel = (next.getMonth() + 1) + "/" + next.getDate();
+
+      var row = document.createElement("div");
+      row.className = "list-item";
+
+      var left = document.createElement("div");
+      left.className = "li-left";
+      var nameEl = document.createElement("div");
+      nameEl.className = "li-item";
+      nameEl.textContent = stripEmoji(s.name);
+      var metaEl = document.createElement("div");
+      metaEl.className = "li-meta";
+      metaEl.textContent = cycleLabel + " ・ 次回 " + nextLabel + "（" + daysLabel + "） ・ " + payLabel(s.payMethod);
+      left.appendChild(nameEl);
+      left.appendChild(metaEl);
+
+      var right = document.createElement("div");
+      right.className = "li-right";
+      var amountEl = document.createElement("div");
+      amountEl.className = "li-amount";
+      amountEl.textContent = formatYen(s.amount);
+
+      var actions = document.createElement("div");
+      actions.className = "li-actions";
+      var editBtn = document.createElement("button");
+      editBtn.className = "sub-edit";
+      editBtn.textContent = "編集";
+      editBtn.addEventListener("click", function () { startSubEdit(s.id); });
+      var delBtn = document.createElement("button");
+      delBtn.className = "del-btn sub-del";
+      delBtn.textContent = "削除";
+      delBtn.addEventListener("click", function () { requestSubDelete(s.id); });
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+
+      right.appendChild(amountEl);
+      right.appendChild(actions);
+
+      row.appendChild(left);
+      row.appendChild(right);
+      subListEl.appendChild(row);
+    });
+  }
+
+  function renderSubscScreen() {
+    renderSubList();
+    renderSubTotals();
+  }
+
+  function resetSubForm() {
+    subEditingId = null;
+    subNameInput.value = "";
+    subAmountInput.value = "";
+    subCycleSelect.value = "monthly";
+    subDateInput.value = todayStr();
+    subPaySelect.value = DEFAULT_PAY_ID;
+    subSaveBtn.textContent = "登録する";
+  }
+
+  function startSubEdit(id) {
+    var rec = subscriptions.find(function (s) { return s.id === id; });
+    if (!rec) return;
+    subEditingId = id;
+    subNameInput.value = rec.name;
+    subAmountInput.value = rec.amount;
+    subCycleSelect.value = rec.cycle;
+    subDateInput.value = rec.baseDate;
+    subPaySelect.value = rec.payMethod;
+    subSaveBtn.textContent = "更新する";
+  }
+
+  function requestSubDelete(id) {
+    var rec = subscriptions.find(function (s) { return s.id === id; });
+    if (!rec) return;
+    if (!confirm("「" + stripEmoji(rec.name) + "」を削除しますか？")) return;
+    subscriptions = subscriptions.filter(function (s) { return s.id !== id; });
+    saveSubscriptions(subscriptions);
+    if (subEditingId === id) resetSubForm();
+    renderSubscScreen();
+    showToast("削除しました");
+  }
+
+  subSaveBtn.addEventListener("click", function () {
+    var name = subNameInput.value.trim();
+    var amount = parseFloat(subAmountInput.value);
+    var cycle = subCycleSelect.value === "yearly" ? "yearly" : "monthly";
+    var baseDate = subDateInput.value;
+    var pay = subPaySelect.value;
+
+    if (!name) { showToast("サービス名を入力してください"); return; }
+    if (!amount || amount <= 0) { showToast("金額を入力してください"); return; }
+    if (!baseDate) { showToast("基準日を入力してください"); return; }
+
+    if (subEditingId) {
+      var rec = subscriptions.find(function (s) { return s.id === subEditingId; });
+      if (rec) {
+        rec.name = name;
+        rec.amount = amount;
+        rec.cycle = cycle;
+        rec.baseDate = baseDate;
+        rec.payMethod = pay;
+      }
+      showToast("更新しました");
+    } else {
+      subscriptions.push({ id: uid(), name: name, amount: amount, cycle: cycle, baseDate: baseDate, payMethod: pay });
+      showToast("登録しました");
+    }
+    saveSubscriptions(subscriptions);
+    resetSubForm();
+    renderSubscScreen();
+  });
+
+  renderSubPaySelect();
+  resetSubForm();
+
   // ---------- 初期描画 ----------
   handleUrlAutoAdd();
   renderPayGroup();
   renderCategoryGroup();
   refreshListScreen();
   renderCategoryEditList();
+  renderSubscScreen();
   renderSyncSettingsForm();
   updateSyncNotice();
   if (isSyncConfigured()) {
