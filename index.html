@@ -748,6 +748,16 @@
 
     <!-- サブスク管理画面 -->
     <section class="screen" id="screen-subsc">
+      <div class="card">
+        <div id="subMonthly">¥0</div>
+        <div class="total-sub">月あたりの合計（概算）</div>
+        <div id="subYearly">¥0</div>
+        <div class="total-sub">年あたりの合計（概算）</div>
+      </div>
+      <div class="card">
+        <div class="section-title">登録中のサブスク</div>
+        <div id="subList"></div>
+      </div>
       <div class="card" id="subFormCard">
         <button type="button" class="sub-add-btn" id="subAddBtn">＋ サブスクを追加</button>
         <div class="section-title">手動で登録</div>
@@ -823,17 +833,6 @@
         <select id="subPlanPay"></select>
 
         <button id="subPlanAddBtn">このプランで追加</button>
-      </div>
-
-      <div class="card">
-        <div id="subMonthly">¥0</div>
-        <div class="total-sub">月あたりの合計（概算）</div>
-        <div id="subYearly">¥0</div>
-        <div class="total-sub">年あたりの合計（概算）</div>
-      </div>
-      <div class="card">
-        <div class="section-title">登録中のサブスク</div>
-        <div id="subList"></div>
       </div>
     </section>
 
