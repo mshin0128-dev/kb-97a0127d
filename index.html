@@ -901,7 +901,6 @@
   var STORAGE_KEY = "kakeibo_records_v1";
   var CATEGORY_KEY = "kakeibo_categories_v1";
   var PAY_METHODS = [
-    { id: "card", label: "カード", csvLabel: "カード", hidden: true },
     { id: "cash", label: "現金", csvLabel: "現金" },
     { id: "paypay", label: "PayPay", csvLabel: "PayPay" },
     { id: "aeon", label: "カード（イオン）", csvLabel: "カード（イオン）" },
@@ -938,10 +937,13 @@
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       var list = raw ? JSON.parse(raw) : [];
+      var changed = false;
       list.forEach(function (r) {
         if (typeof r.place !== "string") r.place = "";
         if (!r.time) r.time = (r.date || todayStr()) + " 00:00";
+        if (r.payMethod === "card") { r.payMethod = DEFAULT_PAY_ID; changed = true; }
       });
+      if (changed) saveRecords(list);
       return list;
     } catch (e) { return []; }
   }
@@ -979,7 +981,12 @@
     try {
       var raw = localStorage.getItem(SYNC_CACHE_KEY);
       var list = raw ? JSON.parse(raw) : [];
-      list.forEach(function (r) { if (typeof r.place !== "string") r.place = ""; });
+      var changed = false;
+      list.forEach(function (r) {
+        if (typeof r.place !== "string") r.place = "";
+        if (r.payMethod === "card") { r.payMethod = DEFAULT_PAY_ID; changed = true; }
+      });
+      if (changed) saveSyncCache(list);
       return list;
     } catch (e) { return []; }
   }
@@ -1070,7 +1077,7 @@
         item: String(r.item || ""),
         place: String(r.place || ""),
         amount: Number(r.amount) || 0,
-        payMethod: String(r.payMethod || "cash"),
+        payMethod: payIdFromLabel(r.payMethod) || "cash",
         category: String(r.category || "")
       };
     });
@@ -1966,7 +1973,7 @@
     if (norm.indexOf("イオン") !== -1 || norm.indexOf("aeon") !== -1) return "aeon";
     if (norm.indexOf("楽天") !== -1 || norm.indexOf("rakuten") !== -1) return "rakuten";
     if (norm.indexOf("jcb") !== -1) return "jcb";
-    if (norm.indexOf("カード") !== -1 || norm.indexOf("card") !== -1) return "card";
+    if (norm.indexOf("カード") !== -1 || norm.indexOf("card") !== -1) return "aeon";
     if (norm.indexOf("現金") !== -1 || norm.indexOf("cash") !== -1) return "cash";
     if (norm.indexOf("paypay") !== -1 || norm.indexOf("ペイペイ") !== -1) return "paypay";
     return null;
@@ -2403,7 +2410,13 @@
     try {
       var raw = localStorage.getItem(SUBSC_KEY);
       var list = raw ? JSON.parse(raw) : [];
-      return Array.isArray(list) ? list : [];
+      if (!Array.isArray(list)) return [];
+      var changed = false;
+      list.forEach(function (s) {
+        if (s.payMethod === "card") { s.payMethod = DEFAULT_PAY_ID; changed = true; }
+      });
+      if (changed) saveSubscriptions(list);
+      return list;
     } catch (e) { return []; }
   }
   function saveSubscriptions(list) {
