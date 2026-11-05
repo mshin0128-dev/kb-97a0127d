@@ -172,7 +172,7 @@
     font-weight: bold;
   }
 
-  #addBtn, #subSaveBtn, #subPlanAddBtn {
+  #addBtn, #launchShortcutBtn, #subSaveBtn, #subPlanAddBtn {
     display: block;
     width: 100%;
     padding: 18px;
@@ -186,7 +186,7 @@
     cursor: pointer;
     margin-top: 4px;
   }
-  #addBtn:active, #subSaveBtn:active, #subPlanAddBtn:active { transform: scale(0.98); }
+  #addBtn:active, #launchShortcutBtn:active, #subSaveBtn:active, #subPlanAddBtn:active { transform: scale(0.98); }
 
   .sub-add-btn {
     display: block;
@@ -439,6 +439,27 @@
     margin-bottom: 8px;
   }
 
+  .launcher-desc {
+    color: var(--sub);
+    font-size: 13px;
+    text-align: center;
+    margin: 4px 0 var(--space);
+    box-sizing: border-box;
+  }
+
+  .edit-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space);
+  }
+  .edit-header-row #cancelEditBtn {
+    width: auto;
+    margin-bottom: 0;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
   .cat-edit-row {
     display: flex;
     align-items: center;
@@ -657,8 +678,16 @@
   <main>
     <!-- 入力画面 -->
     <section class="screen active" id="screen-input">
-      <div class="card">
+      <div class="card" id="inputLauncherCard">
         <div id="syncNotice" class="sync-notice" style="display:none;">ショートカット連携が未設定です（設定画面で連携URLを入力）</div>
+        <p class="launcher-desc">ショートカットが開きます。金額などを入力すると裏で記録されます</p>
+        <button type="button" id="launchShortcutBtn">入力する</button>
+      </div>
+      <div class="card" id="inputEditCard" style="display:none;">
+        <div class="edit-header-row">
+          <span class="section-title" style="margin:0;">記録を編集</span>
+          <button type="button" class="file-btn" id="cancelEditBtn">キャンセル</button>
+        </div>
         <div class="field-row two-col">
           <div class="field-col">
             <label class="field-label" for="date">日付</label>
@@ -748,16 +777,6 @@
 
     <!-- サブスク管理画面 -->
     <section class="screen" id="screen-subsc">
-      <div class="card">
-        <div id="subMonthly">¥0</div>
-        <div class="total-sub">月あたりの合計（概算）</div>
-        <div id="subYearly">¥0</div>
-        <div class="total-sub">年あたりの合計（概算）</div>
-      </div>
-      <div class="card">
-        <div class="section-title">登録中のサブスク</div>
-        <div id="subList"></div>
-      </div>
       <div class="card" id="subFormCard">
         <button type="button" class="sub-add-btn" id="subAddBtn">＋ サブスクを追加</button>
         <div class="section-title">手動で登録</div>
@@ -834,6 +853,17 @@
 
         <button id="subPlanAddBtn">このプランで追加</button>
       </div>
+
+      <div class="card">
+        <div id="subMonthly">¥0</div>
+        <div class="total-sub">月あたりの合計（概算）</div>
+        <div id="subYearly">¥0</div>
+        <div class="total-sub">年あたりの合計（概算）</div>
+      </div>
+      <div class="card">
+        <div class="section-title">登録中のサブスク</div>
+        <div id="subList"></div>
+      </div>
     </section>
 
     <!-- 設定画面 -->
@@ -853,6 +883,13 @@
         <button class="file-btn" id="syncMigrateBtn">端末内の記録をシートへ移す</button>
       </div>
       <div class="card">
+        <div class="section-title">ショートカット起動</div>
+        <label class="field-label" for="shortcutNameInput">ショートカット名</label>
+        <input type="text" id="shortcutNameInput" placeholder="家計簿に記録" autocomplete="off">
+        <button class="file-btn" id="shortcutNameSaveBtn">保存</button>
+        <div style="color:var(--sub);font-size:12px;margin-top:8px;">入力タブの「入力する」で起動するショートカットの名前です。未設定時は「家計簿に記録」を使います。</div>
+      </div>
+      <div class="card">
         <div class="section-title">カテゴリ編集</div>
         <div id="categoryEditList"></div>
         <div class="add-cat-row">
@@ -868,7 +905,7 @@
         <button class="file-btn danger" id="clearAllBtn">全データを削除</button>
       </div>
       <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">サブスク料金: 2026年11月1日時点の公式情報をもとに作成。最新の金額は各公式サイトで確認してください</div>
-      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.01f</div>
+      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.05a</div>
     </section>
   </main>
 
@@ -899,7 +936,16 @@
 
   var STORAGE_KEY = "kakeibo_records_v1";
   var CATEGORY_KEY = "kakeibo_categories_v1";
+  var SHORTCUT_NAME_KEY = "kakeibo_shortcut_name";
+  function getShortcutName() {
+    var n = localStorage.getItem(SHORTCUT_NAME_KEY);
+    return (n && n.trim()) ? n.trim() : "家計簿に記録";
+  }
+  function setShortcutName(n) {
+    localStorage.setItem(SHORTCUT_NAME_KEY, (n || "").trim());
+  }
   var PAY_METHODS = [
+    { id: "card", label: "カード", csvLabel: "カード", hidden: true },
     { id: "cash", label: "現金", csvLabel: "現金" },
     { id: "paypay", label: "PayPay", csvLabel: "PayPay" },
     { id: "aeon", label: "カード（イオン）", csvLabel: "カード（イオン）" },
@@ -936,13 +982,10 @@
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       var list = raw ? JSON.parse(raw) : [];
-      var changed = false;
       list.forEach(function (r) {
         if (typeof r.place !== "string") r.place = "";
         if (!r.time) r.time = (r.date || todayStr()) + " 00:00";
-        if (r.payMethod === "card") { r.payMethod = DEFAULT_PAY_ID; changed = true; }
       });
-      if (changed) saveRecords(list);
       return list;
     } catch (e) { return []; }
   }
@@ -980,12 +1023,7 @@
     try {
       var raw = localStorage.getItem(SYNC_CACHE_KEY);
       var list = raw ? JSON.parse(raw) : [];
-      var changed = false;
-      list.forEach(function (r) {
-        if (typeof r.place !== "string") r.place = "";
-        if (r.payMethod === "card") { r.payMethod = DEFAULT_PAY_ID; changed = true; }
-      });
-      if (changed) saveSyncCache(list);
+      list.forEach(function (r) { if (typeof r.place !== "string") r.place = ""; });
       return list;
     } catch (e) { return []; }
   }
@@ -1076,7 +1114,7 @@
         item: String(r.item || ""),
         place: String(r.place || ""),
         amount: Number(r.amount) || 0,
-        payMethod: payIdFromLabel(r.payMethod) || "cash",
+        payMethod: String(r.payMethod || "cash"),
         category: String(r.category || "")
       };
     });
@@ -1234,7 +1272,14 @@
       if (target === "list") { refreshListScreen(); autoSyncRefresh(); }
       if (target === "stats") { renderStats(); autoSyncRefresh(); }
       if (target === "subsc") { renderSubscScreen(); }
-      if (target === "settings") { renderCategoryEditList(); renderSyncSettingsForm(); }
+      if (target === "settings") {
+        renderCategoryEditList();
+        renderSyncSettingsForm();
+        document.getElementById("shortcutNameInput").value = getShortcutName();
+      }
+      if (target === "input") {
+        if (state.editingId) { showInputEdit(); } else { resetInputForm(); }
+      }
       if (target === "input" || target === "settings") updateSyncNotice();
     });
   });
@@ -1248,6 +1293,22 @@
   var payGroup = document.getElementById("payMethodGroup");
   var catGroup = document.getElementById("categoryGroup");
   var addBtn = document.getElementById("addBtn");
+
+  function showInputLauncher() {
+    document.getElementById("inputLauncherCard").style.display = "";
+    document.getElementById("inputEditCard").style.display = "none";
+  }
+  function showInputEdit() {
+    document.getElementById("inputLauncherCard").style.display = "none";
+    document.getElementById("inputEditCard").style.display = "";
+  }
+
+  document.getElementById("launchShortcutBtn").addEventListener("click", function () {
+    location.href = "shortcuts://run-shortcut?name=" + encodeURIComponent(getShortcutName());
+  });
+  document.getElementById("cancelEditBtn").addEventListener("click", function () {
+    resetInputForm();
+  });
 
   dateInput.value = todayStr();
   timeInput.value = currentTimeStr();
@@ -1305,6 +1366,7 @@
     addBtn.textContent = "記録する";
     renderPayGroup();
     renderCategoryGroup();
+    showInputLauncher();
   }
 
   addBtn.addEventListener("click", function () {
@@ -1627,6 +1689,7 @@
     addBtn.textContent = "更新する";
     renderPayGroup();
     renderCategoryGroup();
+    showInputEdit();
     tabButtons.forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-screen") === "input"); });
     screens.forEach(function (s) { s.classList.toggle("active", s.id === "screen-input"); });
     window.scrollTo(0, 0);
@@ -1794,6 +1857,12 @@
     syncTokenInput.value = state.sync.token || "";
     renderSyncStatus();
   }
+
+  document.getElementById("shortcutNameSaveBtn").addEventListener("click", function () {
+    setShortcutName(document.getElementById("shortcutNameInput").value);
+    document.getElementById("shortcutNameInput").value = getShortcutName();
+    showToast("ショートカット名を保存しました");
+  });
 
   document.getElementById("syncSaveBtn").addEventListener("click", function () {
     var url = syncUrlInput.value.trim();
@@ -1972,7 +2041,7 @@
     if (norm.indexOf("イオン") !== -1 || norm.indexOf("aeon") !== -1) return "aeon";
     if (norm.indexOf("楽天") !== -1 || norm.indexOf("rakuten") !== -1) return "rakuten";
     if (norm.indexOf("jcb") !== -1) return "jcb";
-    if (norm.indexOf("カード") !== -1 || norm.indexOf("card") !== -1) return "aeon";
+    if (norm.indexOf("カード") !== -1 || norm.indexOf("card") !== -1) return "card";
     if (norm.indexOf("現金") !== -1 || norm.indexOf("cash") !== -1) return "cash";
     if (norm.indexOf("paypay") !== -1 || norm.indexOf("ペイペイ") !== -1) return "paypay";
     return null;
@@ -2409,13 +2478,7 @@
     try {
       var raw = localStorage.getItem(SUBSC_KEY);
       var list = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(list)) return [];
-      var changed = false;
-      list.forEach(function (s) {
-        if (s.payMethod === "card") { s.payMethod = DEFAULT_PAY_ID; changed = true; }
-      });
-      if (changed) saveSubscriptions(list);
-      return list;
+      return Array.isArray(list) ? list : [];
     } catch (e) { return []; }
   }
   function saveSubscriptions(list) {
