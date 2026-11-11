@@ -1063,7 +1063,6 @@
   }
 
   var PAY_METHODS = [
-    { id: "card", label: "カード", csvLabel: "カード", hidden: true },
     { id: "cash", label: "現金", csvLabel: "現金" },
     { id: "paypay", label: "PayPay", csvLabel: "PayPay" },
     { id: "aeon", label: "カード（イオン）", csvLabel: "カード（イオン）" },
@@ -2175,7 +2174,7 @@
     if (norm.indexOf("イオン") !== -1 || norm.indexOf("aeon") !== -1) return "aeon";
     if (norm.indexOf("楽天") !== -1 || norm.indexOf("rakuten") !== -1) return "rakuten";
     if (norm.indexOf("jcb") !== -1) return "jcb";
-    if (norm.indexOf("カード") !== -1 || norm.indexOf("card") !== -1) return "card";
+    if (norm.indexOf("カード") !== -1 || norm.indexOf("card") !== -1) return "aeon";
     if (norm.indexOf("現金") !== -1 || norm.indexOf("cash") !== -1) return "cash";
     if (norm.indexOf("paypay") !== -1 || norm.indexOf("ペイペイ") !== -1) return "paypay";
     return null;
