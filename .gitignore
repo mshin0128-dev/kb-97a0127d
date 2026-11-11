@@ -1,0 +1,8 @@
+# backups and verification artifacts (do not publish)
+【家計簿】index_backup_*.html
+【家計簿】shot_*.png
+【家計簿】check_overflow.py
+【家計簿】overflow_*.json
+【家計簿】overflow_*.txt
+_claude_prompt.md
+_claude_run.log

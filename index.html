@@ -8,19 +8,66 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="家計簿">
-<meta name="theme-color" content="#ff8a5b">
+<meta name="theme-color" content="#1EA981">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
 <link rel="manifest" href="manifest.webmanifest?v=2">
+<script>
+(function () {
+  try {
+    var THEME_KEY = "kakeibo_theme_pref";
+    var THEME_COLORS = { light: "#1EA981", dark: "#147A68" };
+    var mql = window.matchMedia("(prefers-color-scheme: dark)");
+    function resolveTheme(pref) {
+      if (pref === "light" || pref === "dark") return pref;
+      return mql.matches ? "dark" : "light";
+    }
+    function applyThemePref(pref) {
+      var resolved = resolveTheme(pref);
+      var root = document.documentElement;
+      root.setAttribute("data-theme", resolved);
+      root.style.colorScheme = resolved;
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute("content", THEME_COLORS[resolved]);
+    }
+    applyThemePref(localStorage.getItem(THEME_KEY) || "auto");
+    mql.addEventListener("change", function () {
+      applyThemePref(localStorage.getItem(THEME_KEY) || "auto");
+    });
+    window.__applyThemePref = applyThemePref;
+  } catch (e) {}
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
-  :root {
-    --bg: #f4f6f8;
-    --card: #ffffff;
-    --accent: #ff8a5b;
-    --accent2: #4ecdc4;
-    --text: #333;
-    --sub: #888;
-    --danger: #ff5a5a;
+  :root, [data-theme="light"] {
+    --bg: #F3F7F5;
+    --card: #FFFFFF;
+    --accent: #1EA981;
+    --accent2: #148F7A;
+    --header-grad-1: #17A287;
+    --header-grad-2: #29B475;
+    --text: #1F2A26;
+    --sub: #6B7A75;
+    --danger: #E05555;
+    --border-color: #E7EEEA;
+    --divider-color: #EFF3F1;
+    --surface-soft: #F6F9F7;
+    --chip-bg: #E8F7F1;
+    --chip-border: #B7E5D4;
+    --danger-soft-bg: #FFF0F0;
+    --danger-soft-border: #FFD6D6;
+    --del-soft-bg: #FFE5E5;
+    --success-soft-bg: #E8FFF8;
+    --success-soft-border: #C6F3E8;
+    --info-soft-bg: #EAF3FF;
+    --info-soft-border: #CFE4FF;
+    --warn-soft-bg: #FFF8F0;
+    --warn-soft-border: #FFE3C6;
+    --modal-overlay: rgba(0,0,0,0.4);
+    --tabbar-bg: #FFFFFF;
+    --tabbar-border: #E7EEEA;
+    --tab-pill-bg: #EEF2F0;
+    --on-accent2: #FFFFFF;
     --radius-lg: 18px;
     --radius: 16px;
     --radius-md: 12px;
@@ -34,6 +81,36 @@
     --safe-b: env(safe-area-inset-bottom, 0px);
     --safe-l: env(safe-area-inset-left, 0px);
     --safe-r: env(safe-area-inset-right, 0px);
+  }
+  html[data-theme="dark"] {
+    --bg: #101614;
+    --card: #1A2220;
+    --accent: #3CC9A0;
+    --accent2: #5AD0B3;
+    --header-grad-1: #147A68;
+    --header-grad-2: #1EA981;
+    --text: #E8EEEB;
+    --sub: #9AA8A3;
+    --danger: #FF6B6B;
+    --border-color: #2B3532;
+    --divider-color: #242D2A;
+    --surface-soft: #1F2825;
+    --chip-bg: rgba(60,201,160,0.16);
+    --chip-border: rgba(60,201,160,0.45);
+    --danger-soft-bg: rgba(255,107,107,0.14);
+    --danger-soft-border: rgba(255,107,107,0.4);
+    --del-soft-bg: rgba(255,107,107,0.16);
+    --success-soft-bg: rgba(90,208,179,0.14);
+    --success-soft-border: rgba(90,208,179,0.4);
+    --info-soft-bg: rgba(99,160,230,0.16);
+    --info-soft-border: rgba(99,160,230,0.4);
+    --warn-soft-bg: rgba(255,183,107,0.14);
+    --warn-soft-border: rgba(255,183,107,0.4);
+    --modal-overlay: rgba(0,0,0,0.6);
+    --tabbar-bg: #1C2422;
+    --tabbar-border: rgba(255,255,255,0.08);
+    --tab-pill-bg: #2A3330;
+    --on-accent2: #0B2420;
   }
   * { box-sizing: border-box; }
   html, body {
@@ -55,13 +132,13 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    padding-bottom: calc(72px + var(--safe-b));
+    padding-bottom: calc(88px + var(--safe-b));
     padding-left: var(--safe-l);
     padding-right: var(--safe-r);
   }
   header.topbar {
     position: sticky; top: 0; z-index: 10;
-    background: linear-gradient(135deg, var(--accent), #ffb37b);
+    background: linear-gradient(135deg, var(--header-grad-1), var(--header-grad-2));
     color: #fff;
     padding: calc(14px + var(--safe-t)) 16px 14px;
     font-size: 18px;
@@ -90,21 +167,21 @@
     font-weight: bold;
   }
 
-  input[type="date"], input[type="text"], input[type="number"], input[type="time"], select {
+  input[type="date"], input[type="text"], input[type="number"], input[type="time"], input[type="password"], select {
     width: 100%;
     min-width: 0;
     padding: 12px;
     font-size: var(--font-base);
     text-align: left;
-    border: 2px solid #eee;
+    border: 2px solid var(--border-color);
     border-radius: var(--radius-md);
-    background: #fafafa;
+    background: var(--surface-soft);
     color: var(--text);
     margin-bottom: var(--space);
     -webkit-appearance: none;
     appearance: none;
   }
-  input:focus, select:focus { outline: none; border-color: var(--accent); background: #fff; }
+  input:focus, select:focus { outline: none; border-color: var(--accent); background: var(--card); }
 
   input[type="date"]::-webkit-date-and-time-value,
   input[type="time"]::-webkit-date-and-time-value {
@@ -142,8 +219,8 @@
     font-size: 24px;
     font-weight: bold;
     margin-bottom: 0;
-    background: #fff8f3;
-    border-color: #ffd9bd;
+    background: var(--chip-bg);
+    border-color: var(--chip-border);
   }
 
   .btn-group {
@@ -159,8 +236,8 @@
     min-width: 0;
     padding: 12px 10px;
     border-radius: var(--radius-md);
-    border: 2px solid #eee;
-    background: #fafafa;
+    border: 2px solid var(--border-color);
+    background: var(--surface-soft);
     font-size: 15px;
     text-align: center;
     cursor: pointer;
@@ -168,7 +245,7 @@
   }
   .choice-btn.selected {
     border-color: var(--accent);
-    background: #fff1e8;
+    background: var(--chip-bg);
     font-weight: bold;
   }
 
@@ -179,10 +256,10 @@
     font-size: var(--font-lg);
     font-weight: bold;
     color: #fff;
-    background: linear-gradient(135deg, var(--accent2), #39b6ad);
+    background: linear-gradient(135deg, var(--header-grad-1), var(--header-grad-2));
     border: none;
     border-radius: var(--radius-lg);
-    box-shadow: 0 4px 12px rgba(78,205,196,0.4);
+    box-shadow: 0 4px 12px rgba(30,169,129,0.35);
     cursor: pointer;
     margin-top: 4px;
   }
@@ -194,7 +271,7 @@
     padding: 14px;
     border-radius: var(--radius-md);
     border: none;
-    background: linear-gradient(135deg, var(--accent), #ffb37b);
+    background: linear-gradient(135deg, var(--header-grad-1), var(--header-grad-2));
     color: #fff;
     font-size: 16px;
     font-weight: bold;
@@ -222,8 +299,8 @@
     flex: 0 0 auto;
     padding: 8px 14px;
     border-radius: 999px;
-    border: 2px solid #eee;
-    background: #fafafa;
+    border: 2px solid var(--border-color);
+    background: var(--surface-soft);
     font-size: 13px;
     white-space: nowrap;
     cursor: pointer;
@@ -231,7 +308,7 @@
   }
   .genre-chip.active {
     border-color: var(--accent);
-    background: #fff1e8;
+    background: var(--chip-bg);
     font-weight: bold;
   }
 
@@ -242,8 +319,8 @@
   }
   .svc-card {
     min-width: 0;
-    background: #fafafa;
-    border: 2px solid #eee;
+    background: var(--surface-soft);
+    border: 2px solid var(--border-color);
     border-radius: var(--radius-md);
     padding: 10px 6px;
     display: flex;
@@ -285,13 +362,13 @@
     justify-content: space-between;
     gap: 8px;
     padding: 12px 10px;
-    border: 2px solid #eee;
+    border: 2px solid var(--border-color);
     border-radius: var(--radius-md);
     margin-bottom: 8px;
     cursor: pointer;
     min-width: 0;
   }
-  .plan-item.selected { border-color: var(--accent); background: #fff1e8; }
+  .plan-item.selected { border-color: var(--accent); background: var(--chip-bg); }
   .plan-item-left { min-width: 0; flex: 1 1 auto; }
   .plan-item-name { font-size: 14px; font-weight: bold; overflow-wrap: anywhere; }
   .plan-item-cycle { font-size: 12px; color: var(--sub); margin-top: 2px; }
@@ -308,36 +385,39 @@
 
   .tabbar {
     position: fixed;
-    bottom: 0; left: 0; right: 0;
-    max-width: 480px;
+    bottom: calc(8px + var(--safe-b));
+    left: calc(12px + var(--safe-l));
+    right: calc(12px + var(--safe-r));
+    max-width: 456px;
     margin: 0 auto;
     display: flex;
-    background: #fff;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+    gap: 4px;
+    background: var(--tabbar-bg);
+    border: 1px solid var(--tabbar-border);
+    border-radius: 28px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.16);
     z-index: 20;
-    padding-top: 6px;
-    padding-bottom: calc(var(--safe-b) + 12px);
-    padding-left: var(--safe-l);
-    padding-right: var(--safe-r);
+    padding: 6px;
   }
   .tab-btn {
     flex: 1;
-    min-height: 44px;
-    padding: 6px 0 4px;
+    min-height: 48px;
+    padding: 6px 2px 5px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--sub);
     border: none;
+    border-radius: 20px;
     background: none;
     cursor: pointer;
   }
   .tab-btn .icon { display: flex; align-items: center; justify-content: center; margin-bottom: 2px; }
-  .tab-btn .icon svg { width: 20px; height: 20px; display: block; }
-  .tab-btn.active { color: var(--accent); font-weight: bold; }
+  .tab-btn .icon svg { width: 21px; height: 21px; display: block; }
+  .tab-btn.active { color: var(--accent); font-weight: bold; background: var(--tab-pill-bg); }
 
   .dot {
     display: inline-block;
@@ -356,11 +436,12 @@
     margin-bottom: 10px;
   }
   .month-switch button {
-    background: #fff;
-    border: 2px solid #eee;
+    background: var(--card);
+    border: 2px solid var(--border-color);
     border-radius: var(--radius-sm);
     padding: 8px 14px;
     font-size: 16px;
+    color: var(--text);
     cursor: pointer;
     flex: 0 0 auto;
   }
@@ -385,7 +466,7 @@
     justify-content: space-between;
     gap: 8px;
     padding: 12px 8px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--divider-color);
     min-width: 0;
   }
   .list-item:last-child { border-bottom: none; }
@@ -397,14 +478,15 @@
   .li-actions { display: flex; }
   .li-actions button {
     border: none;
-    background: #f0f0f0;
+    background: var(--surface-soft);
+    color: var(--text);
     border-radius: var(--radius-sm);
     padding: 6px 8px;
     font-size: 14px;
     margin-left: 4px;
     cursor: pointer;
   }
-  .li-actions .del-btn { background: #ffe5e5; }
+  .li-actions .del-btn { background: var(--del-soft-bg); }
 
   .empty-msg {
     text-align: center;
@@ -422,7 +504,7 @@
   table.summary-table th, table.summary-table td {
     padding: 8px 4px;
     text-align: left;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--divider-color);
   }
   table.summary-table th { color: var(--sub); font-size: 12px; }
   table.summary-table td.num { text-align: right; font-weight: bold; }
@@ -466,13 +548,14 @@
     justify-content: space-between;
     gap: 8px;
     padding: 10px 4px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--divider-color);
     min-width: 0;
   }
   .cat-edit-row .cat-name { font-size: 15px; min-width: 0; overflow-wrap: anywhere; }
   .cat-edit-row button {
     border: none;
-    background: #ffe5e5;
+    background: var(--del-soft-bg);
+    color: var(--text);
     border-radius: var(--radius-sm);
     padding: 6px 10px;
     font-size: 13px;
@@ -488,7 +571,7 @@
   .add-cat-row button {
     border: none;
     background: var(--accent2);
-    color: #fff;
+    color: var(--on-accent2);
     border-radius: var(--radius-md);
     padding: 0 16px;
     font-weight: bold;
@@ -501,23 +584,24 @@
     width: 100%;
     padding: 14px;
     border-radius: var(--radius-md);
-    border: 2px solid #eee;
-    background: #fafafa;
+    border: 2px solid var(--border-color);
+    background: var(--surface-soft);
+    color: var(--text);
     font-size: 15px;
     text-align: center;
     margin-bottom: 12px;
     cursor: pointer;
     font-weight: bold;
   }
-  .file-btn.export { background: #e8fff8; border-color: #c6f3e8; }
-  .file-btn.import { background: #eaf3ff; border-color: #cfe4ff; }
-  .file-btn.danger { background: #fff0f0; border-color: #ffd6d6; color: var(--danger); }
+  .file-btn.export { background: var(--success-soft-bg); border-color: var(--success-soft-border); }
+  .file-btn.import { background: var(--info-soft-bg); border-color: var(--info-soft-border); }
+  .file-btn.danger { background: var(--danger-soft-bg); border-color: var(--danger-soft-border); color: var(--danger); }
 
   .sync-notice {
     font-size: 12px;
     color: var(--sub);
-    background: #fff8f0;
-    border: 1px solid #ffe3c6;
+    background: var(--warn-soft-bg);
+    border: 1px solid var(--warn-soft-border);
     border-radius: var(--radius-sm);
     padding: 8px 10px;
     margin-bottom: var(--space);
@@ -534,8 +618,9 @@
     flex: 0 0 auto;
     padding: 8px 14px;
     border-radius: var(--radius-sm);
-    border: 2px solid #eee;
-    background: #fafafa;
+    border: 2px solid var(--border-color);
+    background: var(--surface-soft);
+    color: var(--text);
     font-size: 13px;
     cursor: pointer;
   }
@@ -553,7 +638,7 @@
 
   .toast {
     position: fixed;
-    bottom: calc(72px + var(--safe-b) + 8px);
+    bottom: calc(88px + var(--safe-b));
     left: 50%;
     transform: translateX(-50%) translateY(20px);
     background: rgba(40,40,40,0.9);
@@ -572,7 +657,7 @@
 
   .modal-overlay {
     position: fixed; inset: 0;
-    background: rgba(0,0,0,0.4);
+    background: var(--modal-overlay);
     display: none;
     align-items: center;
     justify-content: center;
@@ -581,7 +666,8 @@
   }
   .modal-overlay.show { display: flex; }
   .modal-box {
-    background: #fff;
+    background: var(--card);
+    color: var(--text);
     border-radius: var(--radius);
     padding: 20px;
     max-width: 320px;
@@ -599,7 +685,7 @@
     font-size: 14px;
     cursor: pointer;
   }
-  .modal-actions .cancel-btn { background: #eee; }
+  .modal-actions .cancel-btn { background: var(--surface-soft); color: var(--text); }
   .modal-actions .confirm-btn { background: var(--danger); color: #fff; font-weight: bold; }
 
   #monthlyView, #dailyView { display: none; }
@@ -611,7 +697,7 @@
     gap: 8px;
     padding: 10px 6px 6px;
     margin-top: 16px;
-    border-bottom: 2px solid #f0f0f0;
+    border-bottom: 2px solid var(--divider-color);
   }
   .day-head:first-child { margin-top: 0; }
   .day-head-date { font-size: 14px; font-weight: bold; color: var(--text); }
@@ -622,7 +708,7 @@
     justify-content: space-between;
     gap: 8px;
     padding: 10px 6px;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 1px solid var(--divider-color);
     min-width: 0;
   }
   .day-row-main {
@@ -869,6 +955,14 @@
     <!-- 設定画面 -->
     <section class="screen" id="screen-settings">
       <div class="card">
+        <div class="section-title">外観</div>
+        <div class="btn-group" id="themePrefGroup">
+          <div class="choice-btn" data-theme-pref="auto">自動</div>
+          <div class="choice-btn" data-theme-pref="light">ライト</div>
+          <div class="choice-btn" data-theme-pref="dark">ダーク</div>
+        </div>
+      </div>
+      <div class="card">
         <div class="section-title">スプレッドシート連携</div>
         <div id="syncNoticeSettings" class="sync-notice" style="display:none;">ショートカット連携が未設定です（設定画面で連携URLを入力）</div>
         <label class="field-label" for="syncUrl">連携URL</label>
@@ -905,16 +999,16 @@
         <button class="file-btn danger" id="clearAllBtn">全データを削除</button>
       </div>
       <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">サブスク料金: 2026年11月1日時点の公式情報をもとに作成。最新の金額は各公式サイトで確認してください</div>
-      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.05a</div>
+      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.11a</div>
     </section>
   </main>
 
   <nav class="tabbar">
-    <button class="tab-btn active" data-screen="input"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>入力</button>
-    <button class="tab-btn" data-screen="list"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>一覧</button>
-    <button class="tab-btn" data-screen="stats"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>集計</button>
-    <button class="tab-btn" data-screen="subsc"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span>サブスク</button>
-    <button class="tab-btn" data-screen="settings"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>設定</button>
+    <button class="tab-btn active" data-screen="input" aria-label="入力"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>入力</button>
+    <button class="tab-btn" data-screen="list" aria-label="一覧"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>一覧</button>
+    <button class="tab-btn" data-screen="stats" aria-label="集計"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>集計</button>
+    <button class="tab-btn" data-screen="subsc" aria-label="サブスク"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span>サブスク</button>
+    <button class="tab-btn" data-screen="settings" aria-label="設定"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>設定</button>
   </nav>
 </div>
 
@@ -944,6 +1038,30 @@
   function setShortcutName(n) {
     localStorage.setItem(SHORTCUT_NAME_KEY, (n || "").trim());
   }
+
+  var THEME_KEY = "kakeibo_theme_pref";
+  function loadThemePref() {
+    var v = localStorage.getItem(THEME_KEY);
+    return (v === "light" || v === "dark") ? v : "auto";
+  }
+  function setThemePref(pref) {
+    localStorage.setItem(THEME_KEY, pref);
+    if (typeof window.__applyThemePref === "function") window.__applyThemePref(pref);
+    renderThemePrefGroup();
+    if (document.getElementById("screen-stats").classList.contains("active")) renderStats();
+  }
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+  function renderThemePrefGroup() {
+    var pref = loadThemePref();
+    var group = document.getElementById("themePrefGroup");
+    if (!group) return;
+    Array.prototype.forEach.call(group.querySelectorAll(".choice-btn"), function (btn) {
+      btn.classList.toggle("selected", btn.getAttribute("data-theme-pref") === pref);
+    });
+  }
+
   var PAY_METHODS = [
     { id: "card", label: "カード", csvLabel: "カード", hidden: true },
     { id: "cash", label: "現金", csvLabel: "現金" },
@@ -956,7 +1074,7 @@
   var INPUT_PAY_ORDER = ["aeon", "rakuten", "jcb", "cash", "paypay"];
   var DEFAULT_PAY_ID = "aeon";
   var DEFAULT_CATEGORIES = ["食費", "日用品", "交通", "娯楽", "サブスク", "その他"];
-  var CHART_COLORS = ["#ff8a5b", "#4ecdc4", "#ffd166", "#6a89cc", "#c56cf0", "#78e08f", "#f8a5c2", "#596275"];
+  var CHART_COLORS = ["#1EA981", "#4ecdc4", "#ffd166", "#6a89cc", "#c56cf0", "#78e08f", "#f8a5c2", "#596275"];
 
   function stripEmoji(s) {
     return String(s == null ? "" : s).replace(/[\p{Extended_Pictographic}️‍]/gu, "").trim();
@@ -1835,14 +1953,14 @@
           data: values,
           backgroundColor: colors,
           borderWidth: 2,
-          borderColor: "#fff"
+          borderColor: cssVar("--card") || "#fff"
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } }
+          legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 }, color: cssVar("--text") || "#333" } }
         }
       }
     });
@@ -1863,6 +1981,22 @@
     document.getElementById("shortcutNameInput").value = getShortcutName();
     showToast("ショートカット名を保存しました");
   });
+
+  var themePrefGroupEl = document.getElementById("themePrefGroup");
+  if (themePrefGroupEl) {
+    themePrefGroupEl.addEventListener("click", function (e) {
+      var btn = e.target.closest(".choice-btn");
+      if (!btn) return;
+      setThemePref(btn.getAttribute("data-theme-pref"));
+    });
+  }
+  if (window.matchMedia) {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+      if (loadThemePref() === "auto" && document.getElementById("screen-stats").classList.contains("active")) {
+        renderStats();
+      }
+    });
+  }
 
   document.getElementById("syncSaveBtn").addEventListener("click", function () {
     var url = syncUrlInput.value.trim();
@@ -2942,6 +3076,7 @@
   renderCategoryEditList();
   renderSubscScreen();
   renderSyncSettingsForm();
+  renderThemePrefGroup();
   updateSyncNotice();
   if (isSyncConfigured()) {
     renderSyncStatus("読み込み中…", null);
