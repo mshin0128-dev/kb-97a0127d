@@ -37,6 +37,28 @@
   } catch (e) {}
 })();
 </script>
+<script>
+(function () {
+  try {
+    var lastTouchEnd = 0;
+    function isEditableTarget(el) {
+      if (!el) return false;
+      var tag = el.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+    }
+    document.addEventListener("touchend", function (e) {
+      if (isEditableTarget(e.target)) return;
+      var now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive: false });
+    document.addEventListener("dblclick", function (e) {
+      if (isEditableTarget(e.target)) return;
+      e.preventDefault();
+    }, { passive: false });
+  } catch (e) {}
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
   :root, [data-theme="light"] {
@@ -118,12 +140,15 @@
     width: 100%;
     overflow-x: hidden;
     overscroll-behavior-y: contain;
-    touch-action: pan-y;
+    touch-action: manipulation;
     background: var(--bg);
     color: var(--text);
     font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
+  }
+  button, a, input, select, textarea, label, [role="button"] {
+    touch-action: manipulation;
   }
   #app {
     max-width: 480px;
@@ -196,6 +221,9 @@
   }
   .field-row.two-col .field-col { min-width: 0; }
   .field-row.two-col input { margin-bottom: 0; }
+  @media (max-width: 360px) {
+    #inputEditCard .field-row.two-col { grid-template-columns: minmax(0, 1fr); }
+  }
 
   .amount-field {
     position: relative;
@@ -765,14 +793,15 @@
     <!-- 入力画面 -->
     <section class="screen active" id="screen-input">
       <div class="card" id="inputLauncherCard">
+        <div class="section-title">ショートカットで記録</div>
         <div id="syncNotice" class="sync-notice" style="display:none;">ショートカット連携が未設定です（設定画面で連携URLを入力）</div>
         <p class="launcher-desc">ショートカットが開きます。金額などを入力すると裏で記録されます</p>
         <button type="button" id="launchShortcutBtn">入力する</button>
       </div>
-      <div class="card" id="inputEditCard" style="display:none;">
+      <div class="card" id="inputEditCard">
         <div class="edit-header-row">
-          <span class="section-title" style="margin:0;">記録を編集</span>
-          <button type="button" class="file-btn" id="cancelEditBtn">キャンセル</button>
+          <span class="section-title" id="inputFormTitle" style="margin:0;">この画面で入力する</span>
+          <button type="button" class="file-btn" id="cancelEditBtn" style="display:none;">キャンセル</button>
         </div>
         <div class="field-row two-col">
           <div class="field-col">
@@ -999,7 +1028,7 @@
         <button class="file-btn danger" id="clearAllBtn">全データを削除</button>
       </div>
       <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">サブスク料金: 2026年11月1日時点の公式情報をもとに作成。最新の金額は各公式サイトで確認してください</div>
-      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.11b</div>
+      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.12a</div>
     </section>
   </main>
 
@@ -1413,11 +1442,15 @@
 
   function showInputLauncher() {
     document.getElementById("inputLauncherCard").style.display = "";
-    document.getElementById("inputEditCard").style.display = "none";
+    document.getElementById("inputEditCard").style.display = "";
+    document.getElementById("inputFormTitle").textContent = "この画面で入力する";
+    document.getElementById("cancelEditBtn").style.display = "none";
   }
   function showInputEdit() {
-    document.getElementById("inputLauncherCard").style.display = "none";
+    document.getElementById("inputLauncherCard").style.display = "";
     document.getElementById("inputEditCard").style.display = "";
+    document.getElementById("inputFormTitle").textContent = "記録を編集";
+    document.getElementById("cancelEditBtn").style.display = "";
   }
 
   document.getElementById("launchShortcutBtn").addEventListener("click", function () {
@@ -3071,6 +3104,7 @@
   handleUrlAutoAdd();
   renderPayGroup();
   renderCategoryGroup();
+  if (!state.editingId) showInputLauncher();
   refreshListScreen();
   renderCategoryEditList();
   renderSubscScreen();
