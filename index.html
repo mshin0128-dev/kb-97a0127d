@@ -311,6 +311,9 @@
   #payMethodGroup {
     grid-template-columns: repeat(3, 1fr);
   }
+  #listViewToggle {
+    grid-template-columns: repeat(3, 1fr);
+  }
   .choice-btn {
     min-width: 0;
     padding: 12px 10px;
@@ -767,7 +770,10 @@
   .modal-actions .cancel-btn { background: var(--surface-soft); color: var(--text); }
   .modal-actions .confirm-btn { background: var(--danger); color: #fff; font-weight: bold; }
 
-  #monthlyView, #dailyView { display: none; }
+  #weeklyView, #monthlyView { display: none; }
+
+  .day-group, .week-group { margin-top: 16px; }
+  .day-group:first-child, .week-group:first-child { margin-top: 0; }
 
   .day-head {
     display: flex;
@@ -775,30 +781,11 @@
     justify-content: space-between;
     gap: 8px;
     padding: 10px 6px 6px;
-    margin-top: 16px;
     border-bottom: 2px solid var(--divider-color);
   }
-  .day-head:first-child { margin-top: 0; }
   .day-head-date { font-size: 14px; font-weight: bold; color: var(--text); }
   .day-head-total { font-size: 13px; font-weight: bold; color: var(--accent); white-space: nowrap; }
-  .day-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 10px 6px;
-    border-bottom: 1px solid var(--divider-color);
-    min-width: 0;
-  }
-  .day-row-main {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-  .day-row-meta { font-size: 13px; color: var(--text); overflow-wrap: anywhere; }
-  .day-row-amount { font-weight: bold; font-size: 15px; white-space: nowrap; flex: 0 0 auto; }
+  .week-group .section-title { margin: 10px 6px 8px; }
 
   #ptrIndicator {
     position: fixed;
@@ -912,21 +899,21 @@
           <button id="syncRefreshBtn" type="button">更新</button>
         </div>
         <div class="btn-group" id="listViewToggle">
-          <div class="choice-btn selected" data-view="raw">明細</div>
-          <div class="choice-btn" data-view="monthly">月別</div>
           <div class="choice-btn" data-view="daily">日別</div>
+          <div class="choice-btn" data-view="weekly">週別</div>
+          <div class="choice-btn" data-view="monthly">月別</div>
         </div>
-      </div>
-      <div class="card" id="listCard">
-        <div id="listContainer"></div>
-      </div>
-      <div class="card" id="monthlyView">
-        <div class="section-title">カテゴリ内訳</div>
-        <table class="summary-table" id="monthlyCategoryTable"></table>
       </div>
       <div class="card" id="dailyView">
         <div class="section-title">日別の支出</div>
         <div id="dailyList"></div>
+      </div>
+      <div class="card" id="weeklyView">
+        <div id="weeklyList"></div>
+      </div>
+      <div class="card" id="monthlyView">
+        <div class="section-title">カテゴリ内訳</div>
+        <table class="summary-table" id="monthlyCategoryTable"></table>
       </div>
     </section>
 
@@ -1093,7 +1080,7 @@
         <button class="file-btn danger" id="clearAllBtn">全データを削除</button>
       </div>
       <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">サブスク料金: 2026年11月1日時点の公式情報をもとに作成。最新の金額は各公式サイトで確認してください</div>
-      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.14b</div>
+      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.15a</div>
     </section>
   </main>
 
@@ -1130,6 +1117,15 @@
   }
   function setShortcutName(n) {
     localStorage.setItem(SHORTCUT_NAME_KEY, (n || "").trim());
+  }
+
+  var LIST_PERIOD_KEY = "kakeibo_list_period";
+  function loadListView() {
+    var v = localStorage.getItem(LIST_PERIOD_KEY);
+    return (v === "daily" || v === "weekly" || v === "monthly") ? v : "daily";
+  }
+  function saveListView(v) {
+    localStorage.setItem(LIST_PERIOD_KEY, v);
   }
 
   var THEME_KEY = "kakeibo_theme_pref";
@@ -1416,7 +1412,7 @@
     selectedCategory: null,
     listMonth: todayMonthKey(),
     statsMonth: todayMonthKey(),
-    listView: "raw",
+    listView: loadListView(),
     editingId: null,
     pendingDeleteId: null,
     pendingDeleteScreen: null
@@ -1674,7 +1670,6 @@
   });
 
   // ---------- 一覧画面 ----------
-  var listContainer = document.getElementById("listContainer");
   var listMonthLabel = document.getElementById("listMonthLabel");
   var monthTotalEl = document.getElementById("monthTotal");
 
@@ -1691,7 +1686,7 @@
 
   function animateListSwitch(delta) {
     var el = document.getElementById(
-      state.listView === "raw" ? "listCard" : state.listView === "monthly" ? "monthlyView" : "dailyView"
+      state.listView === "daily" ? "dailyView" : state.listView === "weekly" ? "weeklyView" : "monthlyView"
     );
     slideAnimate(el, delta);
   }
@@ -1719,23 +1714,25 @@
   document.getElementById("listViewToggle").querySelectorAll(".choice-btn").forEach(function (btn) {
     btn.addEventListener("click", function () {
       state.listView = btn.getAttribute("data-view");
-      document.getElementById("listViewToggle").querySelectorAll(".choice-btn").forEach(function (b) {
-        b.classList.toggle("selected", b === btn);
-      });
+      saveListView(state.listView);
       updateListViewVisibility();
     });
   });
 
   function updateListViewVisibility() {
-    document.getElementById("listCard").style.display = state.listView === "raw" ? "" : "none";
+    document.getElementById("listViewToggle").querySelectorAll(".choice-btn").forEach(function (b) {
+      b.classList.toggle("selected", b.getAttribute("data-view") === state.listView);
+    });
+    document.getElementById("dailyView").style.display = state.listView === "daily" ? "" : "none";
+    document.getElementById("weeklyView").style.display = state.listView === "weekly" ? "block" : "none";
     document.getElementById("monthlyView").style.display = state.listView === "monthly" ? "block" : "none";
-    document.getElementById("dailyView").style.display = state.listView === "daily" ? "block" : "none";
   }
 
   function refreshListScreen() {
-    renderList();
-    renderMonthlyView();
+    renderListHeader();
     renderDailyView();
+    renderWeeklyView();
+    renderMonthlyView();
     updateListViewVisibility();
   }
 
@@ -1750,6 +1747,25 @@
     if (r.place) parts.push(stripEmoji(r.place));
     parts.push(payLabel(r.payMethod));
     return parts.join(" ・ ");
+  }
+  function parseDateStr(s) {
+    var p = s.split("-").map(function (n) { return parseInt(n, 10); });
+    return new Date(p[0], p[1] - 1, p[2]);
+  }
+  function formatDateStr(d) {
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+  function addDaysStr(dateStr, n) {
+    var d = parseDateStr(dateStr);
+    d.setDate(d.getDate() + n);
+    return formatDateStr(d);
+  }
+  function mondayOf(dateStr) {
+    var d = parseDateStr(dateStr);
+    var dow = d.getDay(); // 0:日 ... 6:土
+    var diff = dow === 0 ? -6 : 1 - dow;
+    d.setDate(d.getDate() + diff);
+    return formatDateStr(d);
   }
 
   function renderMonthlyView() {
@@ -1768,6 +1784,51 @@
     );
   }
 
+  function buildListItem(r, metaText) {
+    var row = document.createElement("div");
+    row.className = "list-item";
+
+    var left = document.createElement("div");
+    left.className = "li-left";
+    var itemEl = document.createElement("div");
+    itemEl.className = "li-item";
+    var itemDot = document.createElement("span");
+    itemDot.className = "dot";
+    itemDot.style.background = colorForCategory(r.category);
+    itemEl.appendChild(itemDot);
+    itemEl.appendChild(document.createTextNode(stripEmoji(r.item)));
+    var metaEl = document.createElement("div");
+    metaEl.className = "li-meta";
+    metaEl.textContent = metaText;
+    left.appendChild(itemEl);
+    left.appendChild(metaEl);
+
+    var right = document.createElement("div");
+    right.className = "li-right";
+    var amountEl = document.createElement("div");
+    amountEl.className = "li-amount";
+    amountEl.textContent = formatYen(r.amount);
+
+    var actions = document.createElement("div");
+    actions.className = "li-actions";
+    var editBtn = document.createElement("button");
+    editBtn.textContent = "編集";
+    editBtn.addEventListener("click", function () { startEdit(r.id); });
+    var delBtn = document.createElement("button");
+    delBtn.className = "del-btn";
+    delBtn.textContent = "削除";
+    delBtn.addEventListener("click", function () { requestDelete(r.id); });
+    actions.appendChild(editBtn);
+    actions.appendChild(delBtn);
+
+    right.appendChild(amountEl);
+    right.appendChild(actions);
+
+    row.appendChild(left);
+    row.appendChild(right);
+    return row;
+  }
+
   function renderDailyView() {
     var dailyList = document.getElementById("dailyList");
     var monthRecords = state.records.filter(function (r) { return monthKeyOf(r.date) === state.listMonth; });
@@ -1776,7 +1837,7 @@
     if (!monthRecords.length) {
       var empty = document.createElement("div");
       empty.className = "empty-msg";
-      empty.textContent = "記録がありません";
+      empty.textContent = "この月の記録はまだありません";
       dailyList.appendChild(empty);
       return;
     }
@@ -1791,6 +1852,9 @@
       var dayRecords = byDay[day].slice().sort(function (a, b) { return timeOf(b).localeCompare(timeOf(a)); });
       var total = dayRecords.reduce(function (sum, r) { return sum + r.amount; }, 0);
 
+      var group = document.createElement("div");
+      group.className = "day-group";
+
       var head = document.createElement("div");
       head.className = "day-head";
       var headDate = document.createElement("span");
@@ -1801,31 +1865,74 @@
       headTotal.textContent = "合計 " + formatYen(total);
       head.appendChild(headDate);
       head.appendChild(headTotal);
-      dailyList.appendChild(head);
+      group.appendChild(head);
 
       dayRecords.forEach(function (r) {
-        var row = document.createElement("div");
-        row.className = "day-row";
-
-        var main = document.createElement("div");
-        main.className = "day-row-main";
-        var dot = document.createElement("span");
-        dot.className = "dot";
-        dot.style.background = colorForCategory(r.category);
-        var metaEl = document.createElement("span");
-        metaEl.className = "day-row-meta";
-        metaEl.textContent = dailyRowMetaText(r);
-        main.appendChild(dot);
-        main.appendChild(metaEl);
-
-        var amt = document.createElement("div");
-        amt.className = "day-row-amount";
-        amt.textContent = formatYen(r.amount);
-
-        row.appendChild(main);
-        row.appendChild(amt);
-        dailyList.appendChild(row);
+        group.appendChild(buildListItem(r, dailyRowMetaText(r)));
       });
+
+      dailyList.appendChild(group);
+    });
+  }
+
+  function renderWeeklyView() {
+    var weeklyList = document.getElementById("weeklyList");
+    var monthRecords = state.records.filter(function (r) { return monthKeyOf(r.date) === state.listMonth; });
+
+    weeklyList.innerHTML = "";
+    if (!monthRecords.length) {
+      var empty = document.createElement("div");
+      empty.className = "empty-msg";
+      empty.textContent = "この月の記録はまだありません";
+      weeklyList.appendChild(empty);
+      return;
+    }
+
+    var byWeek = {};
+    monthRecords.forEach(function (r) {
+      var weekStart = mondayOf(r.date);
+      (byWeek[weekStart] = byWeek[weekStart] || []).push(r);
+    });
+    var weekStarts = Object.keys(byWeek).sort(function (a, b) { return b.localeCompare(a); });
+
+    weekStarts.forEach(function (weekStart) {
+      var weekRecords = byWeek[weekStart];
+      var weekEnd = addDaysStr(weekStart, 6);
+      var total = weekRecords.reduce(function (sum, r) { return sum + r.amount; }, 0);
+
+      var group = document.createElement("div");
+      group.className = "week-group";
+
+      var head = document.createElement("div");
+      head.className = "day-head";
+      var headDate = document.createElement("span");
+      headDate.className = "day-head-date";
+      headDate.textContent = formatDayHeading(weekStart) + "〜" + formatDayHeading(weekEnd);
+      var headTotal = document.createElement("span");
+      headTotal.className = "day-head-total";
+      headTotal.textContent = "合計 " + formatYen(total);
+      head.appendChild(headDate);
+      head.appendChild(headTotal);
+      group.appendChild(head);
+
+      var sectionTitle = document.createElement("div");
+      sectionTitle.className = "section-title";
+      sectionTitle.textContent = "カテゴリ内訳";
+      group.appendChild(sectionTitle);
+
+      var byCategory = {};
+      weekRecords.forEach(function (r) {
+        byCategory[r.category] = (byCategory[r.category] || 0) + r.amount;
+      });
+      var catLabels = Object.keys(byCategory).filter(function (k) { return byCategory[k] > 0; });
+      var catValues = catLabels.map(function (k) { return byCategory[k]; });
+
+      var table = document.createElement("table");
+      table.className = "summary-table";
+      renderSummaryTable(table, catLabels.map(stripEmoji), catValues, catLabels.map(colorForCategory));
+      group.appendChild(table);
+
+      weeklyList.appendChild(group);
     });
   }
 
@@ -1844,73 +1951,11 @@
   function timeOf(r) {
     return ((r.time || "").split(" ")[1]) || "";
   }
-  function fullMetaText(r) {
-    var parts = [r.date + " " + timeOf(r), stripEmoji(r.category), payLabel(r.payMethod)];
-    if (r.place) parts.push(stripEmoji(r.place));
-    return parts.join(" ・ ");
-  }
-  function renderList() {
+  function renderListHeader() {
     listMonthLabel.textContent = monthLabel(state.listMonth);
-    var monthRecords = state.records
-      .filter(function (r) { return monthKeyOf(r.date) === state.listMonth; })
-      .sort(function (a, b) { return b.date.localeCompare(a.date); });
-
+    var monthRecords = state.records.filter(function (r) { return monthKeyOf(r.date) === state.listMonth; });
     var total = monthRecords.reduce(function (sum, r) { return sum + r.amount; }, 0);
     monthTotalEl.textContent = formatYen(total);
-
-    listContainer.innerHTML = "";
-    if (!monthRecords.length) {
-      var empty = document.createElement("div");
-      empty.className = "empty-msg";
-      empty.textContent = "この月の記録はまだありません";
-      listContainer.appendChild(empty);
-      return;
-    }
-
-    monthRecords.forEach(function (r) {
-      var row = document.createElement("div");
-      row.className = "list-item";
-
-      var left = document.createElement("div");
-      left.className = "li-left";
-      var itemEl = document.createElement("div");
-      itemEl.className = "li-item";
-      var itemDot = document.createElement("span");
-      itemDot.className = "dot";
-      itemDot.style.background = colorForCategory(r.category);
-      itemEl.appendChild(itemDot);
-      itemEl.appendChild(document.createTextNode(stripEmoji(r.item)));
-      var metaEl = document.createElement("div");
-      metaEl.className = "li-meta";
-      metaEl.textContent = fullMetaText(r);
-      left.appendChild(itemEl);
-      left.appendChild(metaEl);
-
-      var right = document.createElement("div");
-      right.className = "li-right";
-      var amountEl = document.createElement("div");
-      amountEl.className = "li-amount";
-      amountEl.textContent = formatYen(r.amount);
-
-      var actions = document.createElement("div");
-      actions.className = "li-actions";
-      var editBtn = document.createElement("button");
-      editBtn.textContent = "編集";
-      editBtn.addEventListener("click", function () { startEdit(r.id); });
-      var delBtn = document.createElement("button");
-      delBtn.className = "del-btn";
-      delBtn.textContent = "削除";
-      delBtn.addEventListener("click", function () { requestDelete(r.id); });
-      actions.appendChild(editBtn);
-      actions.appendChild(delBtn);
-
-      right.appendChild(amountEl);
-      right.appendChild(actions);
-
-      row.appendChild(left);
-      row.appendChild(right);
-      listContainer.appendChild(row);
-    });
   }
 
   function startEdit(id) {
