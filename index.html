@@ -168,8 +168,59 @@
     padding: calc(14px + var(--safe-t)) 16px 14px;
     font-size: 18px;
     font-weight: bold;
-    text-align: center;
+    text-align: left;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .topbar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+  }
+  .topbar-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  header.topbar .icon-btn {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    background: rgba(255,255,255,0.22);
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+  header.topbar .icon-btn svg { width: 20px; height: 20px; }
+  header.topbar .icon-btn[aria-pressed="true"] { background: rgba(255,255,255,0.38); }
+  .view-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0 0 12px;
+    min-width: 0;
+  }
+  .view-title-row .section-title { margin: 0; flex: 1; min-width: 0; }
+  .view-title-row #settingsBackBtn {
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    padding: 8px 14px;
+    margin: 0;
+    min-height: 36px;
+    font-size: 14px;
   }
   main { flex: 1; padding: 12px; min-width: 0; }
   .screen { display: none; }
@@ -787,7 +838,17 @@
   <span id="ptrText">引っ張って更新</span>
 </div>
 <div id="app">
-  <header class="topbar">かんたん家計簿</header>
+  <header class="topbar">
+    <div class="topbar-row">
+      <div class="topbar-title">かんたん家計簿</div>
+      <button type="button" class="icon-btn" id="settingsBtn" aria-label="設定" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
 
   <main>
     <!-- 入力画面 -->
@@ -983,6 +1044,10 @@
 
     <!-- 設定画面 -->
     <section class="screen" id="screen-settings">
+      <div class="view-title-row">
+        <div class="section-title">設定</div>
+        <button type="button" class="file-btn" id="settingsBackBtn">戻る</button>
+      </div>
       <div class="card">
         <div class="section-title">外観</div>
         <div class="btn-group" id="themePrefGroup">
@@ -1028,7 +1093,7 @@
         <button class="file-btn danger" id="clearAllBtn">全データを削除</button>
       </div>
       <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">サブスク料金: 2026年11月1日時点の公式情報をもとに作成。最新の金額は各公式サイトで確認してください</div>
-      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.12a</div>
+      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.14b</div>
     </section>
   </main>
 
@@ -1037,7 +1102,6 @@
     <button class="tab-btn" data-screen="list" aria-label="一覧"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>一覧</button>
     <button class="tab-btn" data-screen="stats" aria-label="集計"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>集計</button>
     <button class="tab-btn" data-screen="subsc" aria-label="サブスク"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span>サブスク</button>
-    <button class="tab-btn" data-screen="settings" aria-label="設定"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>設定</button>
   </nav>
 </div>
 
@@ -1408,26 +1472,50 @@
   // ---------- タブ切り替え ----------
   var tabButtons = document.querySelectorAll(".tab-btn");
   var screens = document.querySelectorAll(".screen");
+  var lastMainScreen = "input";
+  var currentScreen = "input";
+
+  function updateSettingsBtnState(name) {
+    var btn = document.getElementById("settingsBtn");
+    if (btn) btn.setAttribute("aria-pressed", name === "settings" ? "true" : "false");
+  }
+
+  function showScreen(target) {
+    if (target !== "settings") lastMainScreen = target;
+    currentScreen = target;
+    tabButtons.forEach(function (b) {
+      var t = b.getAttribute("data-screen");
+      b.classList.toggle("active", target === "settings" ? t === lastMainScreen : t === target);
+    });
+    screens.forEach(function (s) {
+      s.classList.toggle("active", s.id === "screen-" + target);
+    });
+    updateSettingsBtnState(target);
+    if (target === "list") { refreshListScreen(); autoSyncRefresh(); }
+    if (target === "stats") { renderStats(); autoSyncRefresh(); }
+    if (target === "subsc") { renderSubscScreen(); }
+    if (target === "settings") {
+      renderCategoryEditList();
+      renderSyncSettingsForm();
+      document.getElementById("shortcutNameInput").value = getShortcutName();
+    }
+    if (target === "input") {
+      if (state.editingId) { showInputEdit(); } else { resetInputForm(); }
+    }
+    if (target === "input" || target === "settings") updateSyncNotice();
+  }
+
   tabButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
-      var target = btn.getAttribute("data-screen");
-      tabButtons.forEach(function (b) { b.classList.toggle("active", b === btn); });
-      screens.forEach(function (s) {
-        s.classList.toggle("active", s.id === "screen-" + target);
-      });
-      if (target === "list") { refreshListScreen(); autoSyncRefresh(); }
-      if (target === "stats") { renderStats(); autoSyncRefresh(); }
-      if (target === "subsc") { renderSubscScreen(); }
-      if (target === "settings") {
-        renderCategoryEditList();
-        renderSyncSettingsForm();
-        document.getElementById("shortcutNameInput").value = getShortcutName();
-      }
-      if (target === "input") {
-        if (state.editingId) { showInputEdit(); } else { resetInputForm(); }
-      }
-      if (target === "input" || target === "settings") updateSyncNotice();
+      showScreen(btn.getAttribute("data-screen"));
     });
+  });
+  document.getElementById("settingsBtn").addEventListener("click", function () {
+    if (currentScreen === "settings") showScreen(lastMainScreen || "input");
+    else showScreen("settings");
+  });
+  document.getElementById("settingsBackBtn").addEventListener("click", function () {
+    showScreen(lastMainScreen || "input");
   });
 
   // ---------- 入力画面 ----------
@@ -1840,8 +1928,7 @@
     renderPayGroup();
     renderCategoryGroup();
     showInputEdit();
-    tabButtons.forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-screen") === "input"); });
-    screens.forEach(function (s) { s.classList.toggle("active", s.id === "screen-input"); });
+    showScreen("input");
     window.scrollTo(0, 0);
   }
 
