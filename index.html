@@ -555,20 +555,24 @@
   .li-left { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
   .li-item { font-weight: bold; font-size: 15px; overflow-wrap: anywhere; }
   .li-meta { font-size: 12px; color: var(--sub); overflow-wrap: anywhere; }
-  .li-right { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
-  .li-amount { font-weight: bold; font-size: 16px; white-space: nowrap; }
-  .li-actions { display: flex; }
+  .li-right { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+  .li-amount { font-weight: bold; font-size: 16px; white-space: nowrap; text-align: right; }
+  .li-actions { display: flex; flex: 0 0 auto; gap: 4px; }
   .li-actions button {
     border: none;
     background: var(--surface-soft);
     color: var(--text);
     border-radius: var(--radius-sm);
-    padding: 6px 8px;
-    font-size: 14px;
-    margin-left: 4px;
+    padding: 4px 6px;
+    font-size: 12px;
+    margin: 0;
     cursor: pointer;
+    white-space: nowrap;
+    flex: 0 0 auto;
   }
   .li-actions .del-btn { background: var(--del-soft-bg); }
+  #dailyList .list-item { padding: 12px 6px; }
+  #dailyList .li-amount { min-width: 4.5em; }
 
   .empty-msg {
     text-align: center;
@@ -1080,7 +1084,7 @@
         <button class="file-btn danger" id="clearAllBtn">全データを削除</button>
       </div>
       <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">サブスク料金: 2026年11月1日時点の公式情報をもとに作成。最新の金額は各公式サイトで確認してください</div>
-      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.15a</div>
+      <div style="text-align:center;color:var(--sub);font-size:11px;margin-top:4px;">v2026.11.15b</div>
     </section>
   </main>
 
@@ -1821,8 +1825,8 @@
     actions.appendChild(editBtn);
     actions.appendChild(delBtn);
 
-    right.appendChild(amountEl);
     right.appendChild(actions);
+    right.appendChild(amountEl);
 
     row.appendChild(left);
     row.appendChild(right);
